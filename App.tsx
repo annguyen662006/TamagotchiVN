@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CRTOverlay } from './components/CRTOverlay';
 import { PetScreen } from './components/PetScreen';
 import { PixelGrid } from './components/PixelGrid';
