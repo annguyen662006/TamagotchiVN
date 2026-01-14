@@ -1,4 +1,7 @@
 
+
+
+
 import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
@@ -144,9 +147,9 @@ export const useTamagotchi = () => {
                     newNangLuong = Math.max(prev.chiSo.nangLuong - drainRate, 0);
                 }
 
-                // Auto wake
+                // Auto wake: Khi trời sáng (Day) và Pin >= 60%
                 if (prev.dangNgu && isDay) {
-                    if (timeOfDay < 2 && newNangLuong >= 30) {
+                    if (newNangLuong >= 60) {
                         shouldWake = true;
                     }
                 }
@@ -165,8 +168,8 @@ export const useTamagotchi = () => {
                 if (shouldWake) {
                     setTimeout(() => {
                         playSound('WAKE');
-                        triggerNotification("Trời sáng rồi! Dậy thôi!");
-                        triggerSpeech("Oáp... Sáng rồi!");
+                        triggerNotification("Đã sạc đầy (>60%)! Dậy thôi!");
+                        triggerSpeech("Oáp... Tràn trề năng lượng!");
                     }, 0);
                 }
 
@@ -221,6 +224,7 @@ export const useTamagotchi = () => {
                 if (!prev.dangNgu && !forceSleep && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO && Math.random() < 0.1) {
                     newPhan = Math.min(prev.phan + 1, 4);
                     newVeSinh = Math.max(newVeSinh - 5, 0);
+                    if (Math.random() < 0.5) playSound('REFUSE'); // Âm thanh rặn/poop
                 }
 
                 // Sickness
@@ -230,12 +234,14 @@ export const useTamagotchi = () => {
                     if (poorHygiene) {
                         isSick = true;
                         triggerNotification("Bẩn quá! Thú cưng bị bệnh.");
+                        playSound('WARNING');
                     } else {
                         const overEating = newDoi > 90;
                         const randomFlu = Math.random() < 0.01; 
                         if (overEating || randomFlu) {
                             isSick = true;
                             triggerNotification("Thú cưng đang bệnh!");
+                            playSound('WARNING');
                         }
                     }
                 }
@@ -251,18 +257,39 @@ export const useTamagotchi = () => {
                     triggerNotification("Thú cưng đã mất...");
                 }
 
-                // Chatter
+                // Chatter & Warning Sounds
                 const isSleepingNow = shouldWake ? false : (forceSleep ? true : prev.dangNgu);
                 if (!isSleepingNow && newGiaiDoan !== GiaiDoan.HON_MA && newGiaiDoan !== GiaiDoan.TRUNG && newGiaiDoan !== GiaiDoan.NUT_VO) {
+                    // Logic xác suất để không spam âm thanh liên tục mỗi tick (3s)
+                    const shouldPlaySound = Math.random() < 0.4; 
+
                     if (shouldSleepy && newNangLuong < 50 && Math.random() < 0.3) {
                         triggerSpeech("Buồn ngủ quá...", 3000); 
+                        if (shouldPlaySound) playSound('WARNING');
                     }
-                    else if (newDoi > 80) triggerSpeech("Đói quá...", 3000);
-                    else if (newVeSinh < 20) triggerSpeech("Sắp chết rồi...", 3000); 
-                    else if (newVeSinh < 40) triggerSpeech("Dơ quá à!", 3000);
-                    else if (newPhan > 1) triggerSpeech("Dọn đi mà!", 3000);
-                    else if (newNangLuong < 20) triggerSpeech("Mệt rũ rượi...", 3000);
-                    else if (newVui < 30) triggerSpeech("Chán quá...", 3000);
+                    else if (newDoi > 80) {
+                        triggerSpeech("Đói quá...", 3000);
+                        if (shouldPlaySound) playSound('WARNING');
+                    }
+                    else if (newVeSinh < 20) {
+                        triggerSpeech("Sắp chết rồi...", 3000);
+                        if (shouldPlaySound) playSound('WARNING'); 
+                    }
+                    else if (newVeSinh < 40) {
+                        triggerSpeech("Dơ quá à!", 3000);
+                        if (shouldPlaySound) playSound('WARNING');
+                    }
+                    else if (newPhan > 1) {
+                        triggerSpeech("Dọn đi mà!", 3000);
+                    }
+                    else if (newNangLuong < 20) {
+                        triggerSpeech("Mệt rũ rượi...", 3000);
+                        if (shouldPlaySound) playSound('WARNING');
+                    }
+                    else if (newVui < 30) {
+                        triggerSpeech("Chán quá...", 3000);
+                        if (shouldPlaySound) playSound('WARNING');
+                    }
                     else if (Math.random() < 0.15) {
                         const possibleLines = DIALOGUES[newGiaiDoan];
                         if (possibleLines && possibleLines.length > 0) {
@@ -298,6 +325,7 @@ export const useTamagotchi = () => {
     const handleSelectPet = (type: LoaiThu) => {
         if (type !== 'GA' && !isUnlocked) {
             triggerNotification("Nuôi Gà trưởng thành để mở khoá!");
+            playSound('REFUSE');
             return;
         }
 
@@ -309,8 +337,16 @@ export const useTamagotchi = () => {
     };
 
     const handleAction = (action: string) => {
-        if (!gameState.loaiThu || gameState.giaiDoan === GiaiDoan.HON_MA || gameState.giaiDoan === GiaiDoan.TRUNG || gameState.giaiDoan === GiaiDoan.NUT_VO) return;
+        // Chỉ chặn nếu không có loại thú hoặc đã chết
+        if (!gameState.loaiThu || gameState.giaiDoan === GiaiDoan.HON_MA) return;
         
+        // Nếu là giai đoạn trứng, chỉ phát âm thanh và thông báo
+        if (gameState.giaiDoan === GiaiDoan.TRUNG || gameState.giaiDoan === GiaiDoan.NUT_VO) {
+            playSound('EGG_TOUCH');
+            triggerNotification("Shhh... Trứng đang ấp!");
+            return;
+        }
+
         setLastInteractionTime(Date.now());
 
         if (action === 'WAKE_AUTO') {
@@ -320,6 +356,7 @@ export const useTamagotchi = () => {
 
         if (gameState.dangNgu && action !== 'WAKE') {
             triggerNotification("Đang ngủ mà!");
+            playSound('REFUSE');
             return;
         }
 
@@ -357,7 +394,9 @@ export const useTamagotchi = () => {
                     } else if (prev.chiSo.nangLuong < 10) {
                         triggerNotification("Mệt quá không chơi nổi...");
                         triggerSpeech("Mệt quá...");
-                        return prev;
+                        // Technically not a hard refuse via state, but we play sound here since we return early in old logic, 
+                        // but here we are in setState. Let's mark refuse.
+                        shouldRefuse = true;
                     } else {
                         playSound('PLAY');
                         updates.chiSo.vui = Math.min(prev.chiSo.vui + 15, MAX_CHI_SO);
@@ -422,6 +461,7 @@ export const useTamagotchi = () => {
             }
 
             if (shouldRefuse) {
+                playSound('REFUSE'); // Kích hoạt âm thanh từ chối
                 if (action === 'WAKE') {
                    updates.hoatDongHienTai = 'NGU'; 
                 } else {

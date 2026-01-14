@@ -1,4 +1,6 @@
 
+
+
 // Web Audio API implementation for Retro 8-bit SFX
 
 let audioCtx: AudioContext | null = null;
@@ -32,7 +34,7 @@ const playTone = (freq: number, type: OscillatorType, duration: number, startTim
   osc.stop(startTime + duration);
 };
 
-export const playSound = (action: 'FEED' | 'SLEEP' | 'CLEAN' | 'PLAY' | 'CURE' | 'WAKE' | 'SELECT' | 'EVOLVE' | 'DIE') => {
+export const playSound = (action: 'FEED' | 'SLEEP' | 'CLEAN' | 'PLAY' | 'CURE' | 'WAKE' | 'SELECT' | 'EVOLVE' | 'DIE' | 'REFUSE' | 'WARNING' | 'EGG_TOUCH') => {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
 
@@ -101,6 +103,25 @@ export const playSound = (action: 'FEED' | 'SLEEP' | 'CLEAN' | 'PLAY' | 'CURE' |
         playTone(250, 'sawtooth', 0.3, now + 0.3);
         playTone(200, 'sawtooth', 0.3, now + 0.6);
         playTone(150, 'sawtooth', 0.6, now + 0.9);
+        break;
+
+    case 'REFUSE':
+        // Error Buzz: Low sawtooth
+        playTone(150, 'sawtooth', 0.15, now, 0.2);
+        playTone(100, 'sawtooth', 0.15, now + 0.15, 0.2);
+        break;
+
+    case 'WARNING':
+        // Beep Beep: High pitch alert
+        playTone(880, 'square', 0.1, now, 0.05);
+        playTone(0, 'square', 0.1, now + 0.1, 0); // Silence
+        playTone(880, 'square', 0.1, now + 0.2, 0.05);
+        break;
+
+    case 'EGG_TOUCH':
+        // Gentle soft tap (Sine wave, low pitch, short)
+        playTone(330, 'sine', 0.08, now, 0.1);
+        playTone(330, 'sine', 0.08, now + 0.12, 0.05);
         break;
   }
 };
