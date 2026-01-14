@@ -1,4 +1,6 @@
 
+
+
 import React, { useRef, useEffect } from 'react';
 import { TinNhan, TrangThaiGame, GiaiDoan } from '../types';
 import { PET_FRAMES } from '../constants';
@@ -32,26 +34,38 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }, [messages]);
 
     return (
-        <div className="flex-1 flex flex-col bg-black/80 p-2 rounded border border-neon-green/30 m-4 h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto mb-2 pr-1 custom-scrollbar">
+        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-sm relative">
+            {/* Header Chat */}
+            <div className="shrink-0 h-10 border-b border-neon-green/30 flex items-center justify-between px-4 bg-gray-900/50">
+                <span className="text-neon-green font-mono text-sm tracking-widest animate-pulse">:: KẾT NỐI THẦN GIAO CÁCH CẢM ::</span>
+                <button onClick={onBack} className="text-red-500 hover:text-red-400 font-bold text-lg">×</button>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                {messages.length === 0 && (
+                     <div className="text-gray-500 text-center text-xs mt-10 font-mono italic opacity-50">
+                        Hãy nói gì đó với thú cưng của bạn...
+                     </div>
+                )}
                 {messages.map((m, i) => (
-                    <div key={i} className={`flex w-full mb-3 ${m.nguoiGui === 'USER' ? 'justify-end' : 'justify-start items-end gap-2'}`}>
+                    <div key={i} className={`flex w-full mb-4 ${m.nguoiGui === 'USER' ? 'justify-end' : 'justify-start items-end gap-2'}`}>
                         
                         {/* Avatar for PET messages */}
                         {m.nguoiGui === 'PET' && gameState.loaiThu && (
-                            <div className="shrink-0 bg-black/50 border border-neon-green/30 p-1 rounded-sm">
+                            <div className="shrink-0 bg-black/50 border border-neon-green/50 p-1 rounded-sm shadow-[0_0_5px_rgba(0,255,0,0.3)]">
                                 <PixelGrid 
                                     grid={
                                         gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu][GiaiDoan.TRUNG].IDLE :
                                         gameState.giaiDoan === GiaiDoan.HON_MA ? PET_FRAMES[gameState.loaiThu][GiaiDoan.HON_MA].IDLE :
                                         (PET_FRAMES[gameState.loaiThu][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu][GiaiDoan.SO_SINH]).IDLE
                                     } 
-                                    size={2} 
+                                    size={1.5} 
                                 />
                             </div>
                         )}
 
-                        <div className={`px-3 py-2 rounded-lg max-w-[80%] text-xs font-mono shadow-md relative break-words leading-relaxed
+                        <div className={`px-3 py-2 rounded-lg max-w-[85%] text-sm font-mono shadow-md relative break-words leading-relaxed
                             ${m.nguoiGui === 'USER' 
                                 ? 'bg-neon-blue text-black rounded-br-none ml-8' 
                                 : 'bg-gray-800 text-neon-green border border-neon-green/40 rounded-bl-none'}`}>
@@ -70,18 +84,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="flex gap-1 shrink-0">
+
+            {/* Input Area */}
+            <div className="shrink-0 p-3 bg-gray-900/80 border-t border-gray-700 flex gap-2">
                 <input 
                     type="text" 
                     value={inputChat}
                     onChange={e => setInputChat(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleChat()}
-                    className="flex-1 bg-gray-800 text-white border border-gray-600 px-2 py-2 text-xs outline-none focus:border-neon-blue rounded"
-                    placeholder="Nói gì đó..."
+                    className="flex-1 bg-black text-white border border-gray-600 px-3 py-3 text-sm outline-none focus:border-neon-blue rounded-md shadow-inner"
+                    placeholder="Nhập tin nhắn..."
                 />
-                <button onClick={handleChat} className="bg-neon-blue text-black px-3 text-xs font-bold hover:bg-white rounded">GỬI</button>
+                <button 
+                    onClick={handleChat} 
+                    className="bg-neon-blue text-black px-4 py-2 font-bold hover:bg-white rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,255,255,0.3)] active:scale-95 transition-transform"
+                >
+                    GỬI
+                </button>
             </div>
-            <button onClick={onBack} className="mt-2 text-[10px] text-center text-gray-400 hover:text-white border-t border-gray-700 pt-1 w-full shrink-0">[ QUAY LẠI ]</button>
         </div>
     );
 };
