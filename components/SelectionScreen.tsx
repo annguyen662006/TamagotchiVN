@@ -1,6 +1,4 @@
 
-
-
 import React from 'react';
 import { LoaiThu, GiaiDoan } from '../types';
 import { PET_FRAMES } from '../constants';
@@ -15,7 +13,7 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
     return (
         <div className="w-full h-full bg-screen-bg flex flex-col items-center justify-center text-white p-6 overflow-hidden">
             <h2 className="text-2xl font-mono text-neon-blue mb-6 animate-pulse text-center tracking-widest border-b-2 border-neon-blue/30 pb-2 w-full">
-                DATABASE THÚ CƯNG
+                CHỌN THÚ CƯNG
             </h2>
             
             <div className="grid grid-cols-2 gap-4 w-full max-w-md overflow-y-auto custom-scrollbar pb-10">
