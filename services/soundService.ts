@@ -1,167 +1,106 @@
 
-class SoundManager {
-  private audioCtx: AudioContext | null = null;
-  private isMuted: boolean = false;
+// Web Audio API implementation for Retro 8-bit SFX
 
-  constructor() {
-    if (typeof window !== 'undefined') {
-      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-      if (AudioContextClass) {
-        this.audioCtx = new AudioContextClass();
-      }
-    }
+let audioCtx: AudioContext | null = null;
+
+const getAudioContext = () => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
-
-  private async ensureContext() {
-     if (this.audioCtx && this.audioCtx.state === 'suspended') {
-         await this.audioCtx.resume();
-     }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
   }
+  return audioCtx;
+};
 
-  // Hàm cơ bản để phát một nốt nhạc
-  private playTone(freq: number, type: OscillatorType, duration: number, startTime: number = 0, vol: number = 0.1) {
-    if (!this.audioCtx || this.isMuted) return;
+// Helper to play a single tone
+const playTone = (freq: number, type: OscillatorType, duration: number, startTime: number, vol: number = 0.1) => {
+  const ctx = getAudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
 
-    const osc = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
 
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime + startTime);
-    
-    // Hiệu ứng Fade out
-    gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime + startTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + startTime + duration);
+  gain.gain.setValueAtTime(vol, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
 
-    osc.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
 
-    osc.start(this.audioCtx.currentTime + startTime);
-    osc.stop(this.audioCtx.currentTime + startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+};
+
+export const playSound = (action: 'FEED' | 'SLEEP' | 'CLEAN' | 'PLAY' | 'CURE' | 'WAKE' | 'SELECT' | 'EVOLVE' | 'DIE') => {
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+
+  switch (action) {
+    case 'FEED':
+      // Crunch sound: Short, fast sawtooths descending
+      playTone(600, 'sawtooth', 0.1, now);
+      playTone(500, 'sawtooth', 0.1, now + 0.1);
+      playTone(400, 'sawtooth', 0.1, now + 0.2);
+      break;
+
+    case 'SLEEP':
+      // Lullaby: Slow sine waves dropping
+      playTone(600, 'sine', 0.5, now, 0.2);
+      playTone(500, 'sine', 0.5, now + 0.4, 0.2);
+      playTone(400, 'sine', 1.0, now + 0.8, 0.1);
+      break;
+
+    case 'WAKE':
+      // Rooster/Alarm: Sharp square waves rising
+      playTone(400, 'square', 0.1, now);
+      playTone(600, 'square', 0.1, now + 0.1);
+      playTone(800, 'square', 0.3, now + 0.2);
+      break;
+
+    case 'CLEAN':
+      // Sparkle/Sweep: High pitched sines rapid
+      playTone(800, 'sine', 0.1, now);
+      playTone(1000, 'sine', 0.1, now + 0.05);
+      playTone(1200, 'sine', 0.1, now + 0.1);
+      playTone(1500, 'sine', 0.2, now + 0.15);
+      break;
+
+    case 'PLAY':
+      // Happy Arpeggio: Major chord square wave
+      playTone(523.25, 'square', 0.1, now);       // C5
+      playTone(659.25, 'square', 0.1, now + 0.1); // E5
+      playTone(783.99, 'square', 0.1, now + 0.2); // G5
+      playTone(1046.50, 'square', 0.2, now + 0.3); // C6
+      break;
+
+    case 'CURE':
+      // Recovery: Triangle wave sliding up (simulated)
+      playTone(300, 'triangle', 0.1, now);
+      playTone(400, 'triangle', 0.1, now + 0.1);
+      playTone(500, 'triangle', 0.1, now + 0.2);
+      playTone(600, 'triangle', 0.4, now + 0.3);
+      break;
+      
+    case 'SELECT':
+        // UI Select Blip
+        playTone(440, 'square', 0.1, now);
+        break;
+
+    case 'EVOLVE':
+        // Victory Fanfare
+        playTone(523, 'square', 0.1, now);
+        playTone(523, 'square', 0.1, now + 0.15);
+        playTone(523, 'square', 0.1, now + 0.30);
+        playTone(698, 'square', 0.4, now + 0.45);
+        break;
+        
+    case 'DIE':
+        // Sad descent
+        playTone(300, 'sawtooth', 0.3, now);
+        playTone(250, 'sawtooth', 0.3, now + 0.3);
+        playTone(200, 'sawtooth', 0.3, now + 0.6);
+        playTone(150, 'sawtooth', 0.6, now + 0.9);
+        break;
   }
-
-  // 1. CHO ĂN (EATING)
-  public async playEat() {
-    await this.ensureContext();
-    if (!this.audioCtx || this.isMuted) return;
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    
-    osc.type = 'sawtooth'; 
-    osc.frequency.setValueAtTime(300, this.audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(50, this.audioCtx.currentTime + 0.1); 
-
-    gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.1);
-
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.1);
-  }
-
-  // 2. NGỦ (SLEEP)
-  public async playSleep() {
-    await this.ensureContext();
-    this.playTone(400, 'sine', 0.5, 0, 0.05);
-    this.playTone(300, 'sine', 0.5, 0.5, 0.05);
-  }
-
-  // 3. DỌN VỆ SINH (CLEAN)
-  public async playClean() {
-    await this.ensureContext();
-    if (!this.audioCtx || this.isMuted) return;
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-
-    osc.type = 'square'; 
-    osc.frequency.setValueAtTime(100, this.audioCtx.currentTime);
-    osc.frequency.linearRampToValueAtTime(800, this.audioCtx.currentTime + 0.2);
-
-    gain.gain.setValueAtTime(0.05, this.audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.2);
-
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.2);
-  }
-
-  // 4. CHƠI (PLAY)
-  public async playPlay() {
-    await this.ensureContext();
-    this.playTone(523.25, 'square', 0.1, 0, 0.05); // Do (C5)
-    this.playTone(659.25, 'square', 0.1, 0.1, 0.05); // Mi (E5)
-    this.playTone(783.99, 'square', 0.2, 0.2, 0.05); // Sol (G5)
-  }
-
-  // 5. UỐNG THUỐC (HEAL)
-  public async playHeal() {
-    await this.ensureContext();
-    if (!this.audioCtx || this.isMuted) return;
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-
-    osc.type = 'sine'; 
-    osc.frequency.setValueAtTime(400, this.audioCtx.currentTime);
-    osc.frequency.linearRampToValueAtTime(1200, this.audioCtx.currentTime + 0.5); 
-
-    gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 0.5);
-
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.5);
-  }
-  
-  // 6. CHẾT (DIE)
-  public async playDie() {
-    await this.ensureContext();
-    if (!this.audioCtx || this.isMuted) return;
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(400, this.audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(50, this.audioCtx.currentTime + 1); 
-
-    gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 1);
-
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 1);
-  }
-
-  // UI Sound
-  public async playSelect() {
-      await this.ensureContext();
-      this.playTone(440, 'square', 0.1, 0, 0.1);
-  }
-  
-  public async playWake() {
-      await this.ensureContext();
-      this.playTone(400, 'triangle', 0.1, 0, 0.1);
-      this.playTone(500, 'triangle', 0.1, 0.1, 0.1);
-      this.playTone(600, 'triangle', 0.3, 0.2, 0.1);
-  }
-
-  public async playEvolve() {
-    await this.ensureContext();
-    this.playTone(523, 'square', 0.1, 0, 0.1);
-    this.playTone(523, 'square', 0.1, 0.15, 0.1);
-    this.playTone(523, 'square', 0.1, 0.30, 0.1);
-    this.playTone(698, 'square', 0.4, 0.45, 0.1);
-  }
-
-  public toggleMute() {
-    this.isMuted = !this.isMuted;
-  }
-}
-
-export const soundManager = new SoundManager();
+};

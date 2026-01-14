@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
 import { chatVoiThuCung } from '../services/geminiService';
-import { soundManager } from '../services/soundService';
+import { playSound } from '../services/soundService';
 
 const STORAGE_KEY = 'neon_pet_save_data_v2';
 const UNLOCK_KEY = 'neon_pet_unlocked_all';
@@ -164,7 +164,7 @@ export const useTamagotchi = () => {
 
                 if (shouldWake) {
                     setTimeout(() => {
-                        soundManager.playWake();
+                        playSound('WAKE');
                         triggerNotification("Trời sáng rồi! Dậy thôi!");
                         triggerSpeech("Oáp... Sáng rồi!");
                     }, 0);
@@ -172,7 +172,7 @@ export const useTamagotchi = () => {
 
                 if (forceSleep) {
                     setTimeout(() => {
-                        soundManager.playSleep();
+                        playSound('SLEEP');
                         triggerNotification("Pin yếu (<10%)! Tự động ngủ.");
                         triggerSpeech("Sập nguồn...", 2000);
                     }, 0);
@@ -208,7 +208,7 @@ export const useTamagotchi = () => {
                 }
 
                 if (justEvolved) {
-                    soundManager.playEvolve();
+                    playSound('EVOLVE');
                 }
 
                 // Hygiene & Poop
@@ -247,7 +247,7 @@ export const useTamagotchi = () => {
 
                 if (Math.random() < deathChance) { 
                     newGiaiDoan = GiaiDoan.HON_MA;
-                    soundManager.playDie();
+                    playSound('DIE');
                     triggerNotification("Thú cưng đã mất...");
                 }
 
@@ -301,7 +301,7 @@ export const useTamagotchi = () => {
             return;
         }
 
-        soundManager.playSelect();
+        playSound('SELECT');
         setGameState({
             ...KHOI_TAO,
             loaiThu: type
@@ -340,7 +340,7 @@ export const useTamagotchi = () => {
                         triggerNotification("No quá rồi!");
                         triggerSpeech("No bể bụng rồi!");
                     } else {
-                        soundManager.playEat();
+                        playSound('FEED');
                         updates.chiSo.doi = Math.max(prev.chiSo.doi - 20, 0);
                         updates.hoatDongHienTai = 'AN';
                         updates.chiSo.nangLuong = Math.max(prev.chiSo.nangLuong - feedEnergyCost, 0);
@@ -359,7 +359,7 @@ export const useTamagotchi = () => {
                         triggerSpeech("Mệt quá...");
                         return prev;
                     } else {
-                        soundManager.playPlay();
+                        playSound('PLAY');
                         updates.chiSo.vui = Math.min(prev.chiSo.vui + 15, MAX_CHI_SO);
                         updates.chiSo.doi = Math.min(prev.chiSo.doi + 5, MAX_CHI_SO);
                         updates.chiSo.nangLuong = Math.max(prev.chiSo.nangLuong - playEnergyCost, 0);
@@ -370,7 +370,7 @@ export const useTamagotchi = () => {
                     break;
 
                 case 'CLEAN':
-                    soundManager.playClean();
+                    playSound('CLEAN');
                     updates.phan = 0;
                     updates.chiSo.veSinh = 100;
                     updates.hoatDongHienTai = 'TAM';
@@ -384,7 +384,7 @@ export const useTamagotchi = () => {
                         triggerNotification("Chưa buồn ngủ (Pin > 30%)");
                         triggerSpeech("Còn sớm mà!");
                     } else {
-                        soundManager.playSleep();
+                        playSound('SLEEP');
                         updates.dangNgu = true;
                         updates.hoatDongHienTai = 'NGU';
                         sleepStartTime.current = Date.now();
@@ -398,7 +398,7 @@ export const useTamagotchi = () => {
                         triggerNotification("Cần sạc > 30% để dậy!");
                         triggerSpeech("... (Pin yếu)");
                     } else {
-                        soundManager.playWake();
+                        playSound('WAKE');
                         updates.dangNgu = false;
                         updates.hoatDongHienTai = 'DUNG_YEN';
                         triggerNotification("Dậy rồi!");
@@ -412,7 +412,7 @@ export const useTamagotchi = () => {
                         triggerNotification("Có bệnh đâu!");
                         triggerSpeech("Khỏe re mà?");
                     } else {
-                        soundManager.playHeal();
+                        playSound('CURE');
                         updates.biOm = false;
                         updates.chiSo.vui = Math.max(prev.chiSo.vui - 10, 0);
                         triggerNotification("Đã uống thuốc!");
@@ -452,7 +452,7 @@ export const useTamagotchi = () => {
 
     const restartGame = () => {
         if (!gameState.loaiThu) return;
-        soundManager.playSelect();
+        playSound('SELECT');
         setGameState({
             ...KHOI_TAO,
             loaiThu: gameState.loaiThu
