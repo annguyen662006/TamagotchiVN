@@ -103,6 +103,11 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
 
   const showStats = giaiDoan !== GiaiDoan.TRUNG && giaiDoan !== GiaiDoan.NUT_VO && giaiDoan !== GiaiDoan.HON_MA;
 
+  // Determine Pixel Size based on Entity
+  // Ghost is small (8x8), so use size 10 to make it visible
+  // Chicken is big (24x24), so use size 5 to fit screen
+  const petPixelSize = giaiDoan === GiaiDoan.HON_MA ? 10 : 5;
+
   return (
     <div className={`relative w-full h-full ${bgStyle} transition-colors duration-[3000ms] overflow-hidden flex flex-col items-center justify-center`}>
       
@@ -186,7 +191,12 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
 
       {/* The Pet */}
       <div className={`transition-transform duration-500 ${animationClass} z-20 mt-8`}>
-        <PixelGrid grid={currentFrame} color={petColor} size={10} className={isNight ? "drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" : "drop-shadow-sm"} />
+        <PixelGrid 
+            grid={currentFrame} 
+            color={petColor} 
+            size={petPixelSize} 
+            className={isNight ? "drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" : "drop-shadow-sm"} 
+        />
       </div>
 
       {/* Poop */}
