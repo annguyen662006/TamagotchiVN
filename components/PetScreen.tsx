@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { TrangThaiGame, GiaiDoan } from '../types';
-import { FRAMES, TICKS_PER_DAY, CLOUD, TREE_SMALL, FLOWER, GRASS_LOW, GRASS_TALL } from '../constants';
+import { PET_FRAMES, TICKS_PER_DAY, CLOUD, TREE_SMALL, FLOWER, GRASS_LOW, GRASS_TALL } from '../constants';
 import { PixelGrid } from './PixelGrid';
 
 interface PetScreenProps {
@@ -41,7 +41,7 @@ const MOON_GRID = [
 ];
 
 export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, lastInteractionTime = 0 }) => {
-  const { giaiDoan, hoatDongHienTai, phan, dangNgu, tuoi, chiSo } = gameState;
+  const { giaiDoan, hoatDongHienTai, phan, dangNgu, tuoi, chiSo, loaiThu } = gameState;
   const [isIdleWalking, setIsIdleWalking] = useState(false);
 
   // --- Day/Night Cycle Logic ---
@@ -86,26 +86,29 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
 
   // --- Pet Visuals ---
   const currentFrame = useMemo(() => {
-    if (giaiDoan === GiaiDoan.TRUNG) return FRAMES[GiaiDoan.TRUNG].IDLE;
-    if (giaiDoan === GiaiDoan.HON_MA) return FRAMES[GiaiDoan.HON_MA].IDLE;
-    const frames = FRAMES[giaiDoan] || FRAMES[GiaiDoan.SO_SINH];
+    // Use the selected pet type, default to 'GA' if somehow null (shouldn't happen in screen)
+    const petType = loaiThu || 'GA';
+    const framesSet = PET_FRAMES[petType];
+
+    if (giaiDoan === GiaiDoan.TRUNG) return framesSet[GiaiDoan.TRUNG].IDLE;
+    if (giaiDoan === GiaiDoan.HON_MA) return framesSet[GiaiDoan.HON_MA].IDLE;
+    
+    const frames = framesSet[giaiDoan] || framesSet[GiaiDoan.SO_SINH];
     if (hoatDongHienTai === 'CHOI' || hoatDongHienTai === 'AN') return frames.HAPPY || frames.IDLE;
     return frames.IDLE;
-  }, [giaiDoan, hoatDongHienTai]);
+  }, [giaiDoan, hoatDongHienTai, loaiThu]);
 
   const petColor = '#ffffff'; 
   
   let animationClass = 'animate-float';
   if (hoatDongHienTai === 'CHOI') animationClass = 'animate-bounce';
   if (hoatDongHienTai === 'TU_CHOI') animationClass = 'animate-shake';
-  if (giaiDoan === GiaiDoan.HON_MA) animationClass = 'animate-float-ghost opacity-90'; // Changed to specific ghost animation
+  if (giaiDoan === GiaiDoan.HON_MA) animationClass = 'animate-float-ghost opacity-90'; 
   if (isIdleWalking) animationClass = 'animate-walk';
 
   const showStats = giaiDoan !== GiaiDoan.TRUNG && giaiDoan !== GiaiDoan.NUT_VO && giaiDoan !== GiaiDoan.HON_MA;
 
   // Determine Pixel Size based on Entity
-  // Chicken (24x24) and Ghost (24x24) now both use size 5
-  // Previous logic used size 10 for small ghosts (8x8)
   const petPixelSize = 5;
 
   return (
@@ -203,7 +206,7 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
       {phan > 0 && (
         <div className="absolute bottom-[15%] right-20 flex gap-2 z-20">
            {Array.from({length: Math.min(phan, 3)}).map((_, i) => (
-             <PixelGrid key={i} grid={FRAMES.POOP} size={4} />
+             <PixelGrid key={i} grid={PET_FRAMES[loaiThu || 'GA'].POOP} size={4} />
            ))}
         </div>
       )}

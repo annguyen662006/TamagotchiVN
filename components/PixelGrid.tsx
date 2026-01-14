@@ -30,6 +30,15 @@ const PALETTE: Record<number, string> = {
   13: '#5d4037', // Nâu đậm (Poop)
   14: '#a1887f', // Nâu sáng (Highlight)
 
+  // Màu hệ Lửa (Phoenix)
+  20: '#8B0000', // Đỏ rượu vang (Màu nền lông, viền tối)
+  21: '#FF0000', // Đỏ tươi (Thân chính)
+  22: '#FF4500', // Đỏ cam (Cánh, chuyển màu)
+  23: '#FFA500', // Cam sáng (Lông đuôi, Mỏ)
+  24: '#FFD700', // Vàng kim (Mào, Móng vuốt, Lõi lửa)
+  25: '#FFFFFF', // Trắng (Tâm nhiệt độ cao nhất - mắt hoặc lõi ngực)
+  26: '#4B0082', // Tím than (Mắt thần, tạo độ sâu bí ẩn)
+
   // Ghost Colors (Hệ Tâm linh)
   30: '#F0F8FF', // Trắng xanh nhạt (AliceBlue) - Thân
   31: '#B0C4DE', // Xanh xám nhạt (LightSteelBlue) - Viền

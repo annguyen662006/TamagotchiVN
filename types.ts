@@ -1,4 +1,5 @@
 
+
 export enum GiaiDoan {
   TRUNG = 'TRUNG',        // Stage 1
   NUT_VO = 'NUT_VO',      // Stage 2
@@ -8,6 +9,8 @@ export enum GiaiDoan {
   HON_MA = 'HON_MA'
 }
 
+export type LoaiThu = 'GA' | 'PHUONG_HOANG';
+
 export interface ChiSo {
   doi: number; // Hunger (0-100, 0 is full, 100 is starving)
   vui: number; // Happiness (0-100)
@@ -16,6 +19,7 @@ export interface ChiSo {
 }
 
 export interface TrangThaiGame {
+  loaiThu: LoaiThu | null; // Null means selection needed
   giaiDoan: GiaiDoan;
   tuoi: number; // In seconds/ticks roughly
   chiSo: ChiSo;

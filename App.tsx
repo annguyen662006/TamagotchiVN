@@ -1,16 +1,18 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { CRTOverlay } from './components/CRTOverlay';
 import { PetScreen } from './components/PetScreen';
 import { PixelGrid } from './components/PixelGrid';
 import { chatVoiThuCung } from './services/geminiService';
-import { TrangThaiGame, GiaiDoan, TinNhan } from './types';
-import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, FRAMES, TICKS_PER_DAY } from './constants';
+import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from './types';
+import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, PET_FRAMES, TICKS_PER_DAY } from './constants';
 
 // Storage Key
-const STORAGE_KEY = 'neon_pet_save_data_v1';
+const STORAGE_KEY = 'neon_pet_save_data_v2'; // Changed version to reset state for new structure
 
 // Initial State
 const KHOI_TAO: TrangThaiGame = {
+  loaiThu: null, // Start with selection
   giaiDoan: GiaiDoan.TRUNG,
   tuoi: 0,
   chiSo: { doi: 0, vui: 100, veSinh: 100, nangLuong: 100 },
@@ -28,6 +30,39 @@ const DIALOGUES = {
     [GiaiDoan.TRUONG_THANH]: ["Ò ó o!", "Cục tác!", "Bảnh tỏn", "Nhìn gì?", "Hello!", "Gâu... nhầm"],
     [GiaiDoan.HON_MA]: ["Hu hu...", "Lạnh quá...", "Trả mạng...", "..."]
 };
+
+// Selection Screen Component
+const SelectionScreen = ({ onSelect }: { onSelect: (type: LoaiThu) => void }) => {
+    return (
+        <div className="w-full h-full bg-screen-bg flex flex-col items-center justify-center text-white p-4">
+            <h2 className="text-xl font-mono text-neon-blue mb-6 animate-pulse text-center">CHỌN THÚ CƯNG</h2>
+            <div className="flex gap-4">
+                {/* Option 1: Chicken */}
+                <div 
+                    onClick={() => onSelect('GA')}
+                    className="cursor-pointer group flex flex-col items-center bg-gray-900 border border-gray-700 hover:border-neon-green p-3 rounded-xl transition-all hover:scale-105 active:scale-95"
+                >
+                    <div className="mb-2 p-2 bg-black/50 rounded-lg group-hover:bg-neon-green/10">
+                        <PixelGrid grid={PET_FRAMES['GA'][GiaiDoan.SO_SINH].IDLE} size={3} />
+                    </div>
+                    <span className="font-mono text-xs text-gray-400 group-hover:text-neon-green">GÀ CON</span>
+                </div>
+
+                {/* Option 2: Phoenix */}
+                <div 
+                    onClick={() => onSelect('PHUONG_HOANG')}
+                    className="cursor-pointer group flex flex-col items-center bg-gray-900 border border-gray-700 hover:border-red-500 p-3 rounded-xl transition-all hover:scale-105 active:scale-95"
+                >
+                    <div className="mb-2 p-2 bg-black/50 rounded-lg group-hover:bg-red-500/10">
+                         <PixelGrid grid={PET_FRAMES['PHUONG_HOANG'][GiaiDoan.SO_SINH].IDLE} size={3} />
+                    </div>
+                    <span className="font-mono text-xs text-gray-400 group-hover:text-red-500">PHƯỢNG HOÀNG</span>
+                </div>
+            </div>
+            <div className="mt-8 text-[10px] text-gray-600 font-mono">BẤM ĐỂ CHỌN</div>
+        </div>
+    )
+}
 
 export default function App() {
   // Initialize State from LocalStorage if available
@@ -106,7 +141,7 @@ export default function App() {
   // 2. Welcome Back Logic (Run once on mount)
   useEffect(() => {
     // If we loaded a game where the pet is already born (age > 0)
-    if (gameState.tuoi > 0 && gameState.giaiDoan !== GiaiDoan.HON_MA) {
+    if (gameState.loaiThu && gameState.tuoi > 0 && gameState.giaiDoan !== GiaiDoan.HON_MA) {
         
         // Force Wake Up & Happy Animation implies "Waking from hibernation"
         setGameState(prev => ({
@@ -130,12 +165,13 @@ export default function App() {
 
   // --- Game Loop ---
   useEffect(() => {
-    if (gameState.giaiDoan === GiaiDoan.HON_MA) return;
+    // Stop loop if no pet selected or dead
+    if (!gameState.loaiThu || gameState.giaiDoan === GiaiDoan.HON_MA) return;
 
     const interval = setInterval(() => {
       
       setGameState(prev => {
-        if (prev.giaiDoan === GiaiDoan.HON_MA) return prev;
+        if (!prev.loaiThu || prev.giaiDoan === GiaiDoan.HON_MA) return prev;
 
         // --- Day / Night Logic ---
         const timeOfDay = prev.tuoi % TICKS_PER_DAY;
@@ -203,13 +239,13 @@ export default function App() {
             triggerNotification("Trứng đang nứt!");
             newGiaiDoan = GiaiDoan.NUT_VO;
         } else if (prev.giaiDoan === GiaiDoan.NUT_VO && prev.tuoi >= NGUONG_NO) {
-            triggerNotification("Trứng đã nở! Chào bé gà!");
+            triggerNotification("Trứng đã nở! Chào bé!");
             newGiaiDoan = GiaiDoan.SO_SINH;
         } else if (prev.giaiDoan === GiaiDoan.SO_SINH && prev.tuoi >= NGUONG_THIEU_NIEN) {
-            triggerNotification("Bé gà đã lớn phổng phao!");
+            triggerNotification("Bé đã lớn phổng phao!");
             newGiaiDoan = GiaiDoan.THIEU_NIEN;
         } else if (prev.giaiDoan === GiaiDoan.THIEU_NIEN && prev.tuoi >= NGUONG_TRUONG_THANH) {
-            triggerNotification("Gà đã trưởng thành oai vệ!");
+            triggerNotification("Đã trưởng thành oai vệ!");
             newGiaiDoan = GiaiDoan.TRUONG_THANH;
         }
 
@@ -295,12 +331,19 @@ export default function App() {
     }, TOC_DO_TICK);
 
     return () => clearInterval(interval);
-  }, [gameState.giaiDoan, gameState.dangNgu]);
+  }, [gameState.giaiDoan, gameState.dangNgu, gameState.loaiThu]);
 
   // --- Actions ---
 
+  const handleSelectPet = (type: LoaiThu) => {
+      setGameState({
+          ...KHOI_TAO,
+          loaiThu: type
+      });
+  };
+
   const handleAction = (action: string) => {
-    if (gameState.giaiDoan === GiaiDoan.HON_MA || gameState.giaiDoan === GiaiDoan.TRUNG || gameState.giaiDoan === GiaiDoan.NUT_VO) return;
+    if (!gameState.loaiThu || gameState.giaiDoan === GiaiDoan.HON_MA || gameState.giaiDoan === GiaiDoan.TRUNG || gameState.giaiDoan === GiaiDoan.NUT_VO) return;
     
     // Update interaction time on any manual action
     setLastInteractionTime(Date.now());
@@ -463,8 +506,9 @@ export default function App() {
                 {/* Content Layer */}
                 <div className="relative z-10 w-full h-full flex flex-col">
                     
-                    {/* Chat or Game View */}
-                    {isChatMode ? (
+                    {!gameState.loaiThu ? (
+                        <SelectionScreen onSelect={handleSelectPet} />
+                    ) : isChatMode ? (
                         <div className="flex-1 flex flex-col bg-black/80 p-2 rounded border border-neon-green/30 m-4">
                             <div className="flex-1 overflow-y-auto mb-2 pr-1">
                                 {messages.map((m, i) => (
@@ -475,9 +519,9 @@ export default function App() {
                                             <div className="shrink-0 bg-black/50 border border-neon-green/30 p-1 rounded-sm">
                                                 <PixelGrid 
                                                     grid={
-                                                        gameState.giaiDoan === GiaiDoan.TRUNG ? FRAMES[GiaiDoan.TRUNG].IDLE :
-                                                        gameState.giaiDoan === GiaiDoan.HON_MA ? FRAMES[GiaiDoan.HON_MA].IDLE :
-                                                        (FRAMES[gameState.giaiDoan] || FRAMES[GiaiDoan.SO_SINH]).IDLE
+                                                        gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu!][GiaiDoan.TRUNG].IDLE :
+                                                        gameState.giaiDoan === GiaiDoan.HON_MA ? PET_FRAMES[gameState.loaiThu!][GiaiDoan.HON_MA].IDLE :
+                                                        (PET_FRAMES[gameState.loaiThu!][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu!][GiaiDoan.SO_SINH]).IDLE
                                                     } 
                                                     size={2} 
                                                 />
@@ -535,8 +579,12 @@ export default function App() {
 
             {/* Buttons / Controls */}
             <div className="grid grid-cols-3 gap-4 w-full mt-4">
-                {gameState.giaiDoan === GiaiDoan.HON_MA ? (
-                    <button onClick={resetGame} className="col-span-3 bg-red-600 text-white font-bold py-4 rounded-lg shadow-[0_4px_0_rgb(153,27,27)] active:shadow-none active:translate-y-1">
+                {gameState.giaiDoan === GiaiDoan.HON_MA || !gameState.loaiThu ? (
+                    <button 
+                        onClick={resetGame} 
+                        className={`col-span-3 font-bold py-4 rounded-lg shadow-[0_4px_0_rgba(0,0,0,0.5)] active:shadow-none active:translate-y-1 ${!gameState.loaiThu ? 'bg-gray-800 text-gray-400 cursor-not-allowed hidden' : 'bg-red-600 text-white shadow-[0_4px_0_rgb(153,27,27)]'}`}
+                        disabled={!gameState.loaiThu}
+                    >
                         HỒI SINH (RESET)
                     </button>
                 ) : (
