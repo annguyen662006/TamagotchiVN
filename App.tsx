@@ -22,7 +22,8 @@ export default function App() {
       handleSelectPet,
       handleAction,
       handleChat,
-      resetGame
+      resetGame,
+      restartGame
   } = useTamagotchi();
 
   return (
@@ -33,7 +34,7 @@ export default function App() {
         <div className="bg-gray-900 p-6 rounded-[2.5rem] border-4 border-gray-700 w-full max-w-md min-w-[320px] flex flex-col items-center gap-4 relative">
             
             {/* Branding */}
-            <div className="text-gray-500 font-mono text-xs tracking-[0.3em] mb-1">NEON-PET v2.1</div>
+            <div className="text-gray-500 font-mono text-xs tracking-[0.3em] mb-1">GAME TUỔI THƠ</div>
 
             {/* Main Screen Area */}
             <div className="relative w-full aspect-square bg-screen-off rounded-xl border-4 border-gray-600 shadow-inner overflow-hidden group">
@@ -72,14 +73,23 @@ export default function App() {
 
             {/* Buttons / Controls */}
             <div className="grid grid-cols-3 gap-4 w-full mt-4">
-                {gameState.giaiDoan === GiaiDoan.HON_MA || !gameState.loaiThu ? (
-                    <button 
-                        onClick={resetGame} 
-                        className={`col-span-3 font-bold py-4 rounded-lg shadow-[0_4px_0_rgba(0,0,0,0.5)] active:shadow-none active:translate-y-1 ${!gameState.loaiThu ? 'bg-gray-800 text-gray-400 cursor-not-allowed hidden' : 'bg-red-600 text-white shadow-[0_4px_0_rgb(153,27,27)]'}`}
-                        disabled={!gameState.loaiThu}
-                    >
-                        HỒI SINH (RESET)
-                    </button>
+                {gameState.giaiDoan === GiaiDoan.HON_MA ? (
+                    <div className="col-span-3 flex gap-4">
+                        <button 
+                            onClick={restartGame} 
+                            className="flex-1 font-bold py-4 rounded-lg bg-red-600 text-white shadow-[0_4px_0_rgb(153,27,27)] active:shadow-none active:translate-y-1"
+                        >
+                            HỒI SINH
+                        </button>
+                        <button 
+                            onClick={resetGame} 
+                            className="flex-1 font-bold py-4 rounded-lg bg-gray-600 text-white shadow-[0_4px_0_rgba(75,85,99,1)] active:shadow-none active:translate-y-1"
+                        >
+                            CHỌN THÚ CƯNG
+                        </button>
+                    </div>
+                ) : !gameState.loaiThu ? (
+                    <div className="col-span-3 hidden"></div>
                 ) : (
                     <>
                         <GameButton 

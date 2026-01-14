@@ -32,17 +32,13 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                     className={`cursor-pointer group flex flex-col items-center bg-gray-900 border p-3 rounded-xl transition-all shadow-lg
                         ${isUnlocked 
                             ? 'border-gray-700 hover:border-red-500 hover:scale-105 active:scale-95' 
-                            : 'border-gray-800 opacity-60 grayscale'}`}
+                            : 'border-gray-800 opacity-50 grayscale'}`}
                 >
                     <div className={`mb-2 p-2 bg-black/50 rounded-lg ${isUnlocked ? 'group-hover:bg-red-500/10' : ''}`}>
-                         {isUnlocked ? (
-                             <PixelGrid grid={PET_FRAMES['PHUONG_HOANG'][GiaiDoan.SO_SINH].IDLE} size={3} />
-                         ) : (
-                             <div className="text-2xl h-[72px] w-[72px] flex items-center justify-center">🔒</div>
-                         )}
+                         <PixelGrid grid={PET_FRAMES['PHUONG_HOANG'][GiaiDoan.SO_SINH].IDLE} size={3} />
                     </div>
-                    <span className={`font-mono text-xs font-bold ${isUnlocked ? 'text-gray-400 group-hover:text-red-500' : 'text-gray-600'}`}>
-                        {isUnlocked ? 'PHƯỢNG HOÀNG' : '???'}
+                    <span className={`font-mono text-xs font-bold ${isUnlocked ? 'text-gray-400 group-hover:text-red-500' : 'text-gray-500'}`}>
+                        PHƯỢNG HOÀNG {isUnlocked ? '' : '🔒'}
                     </span>
                 </div>
 
@@ -52,17 +48,13 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                     className={`cursor-pointer group flex flex-col items-center bg-gray-900 border p-3 rounded-xl transition-all shadow-lg
                         ${isUnlocked 
                             ? 'border-gray-700 hover:border-blue-400 hover:scale-105 active:scale-95' 
-                            : 'border-gray-800 opacity-60 grayscale'}`}
+                            : 'border-gray-800 opacity-50 grayscale'}`}
                 >
                     <div className={`mb-2 p-2 bg-black/50 rounded-lg ${isUnlocked ? 'group-hover:bg-blue-400/10' : ''}`}>
-                         {isUnlocked ? (
-                            <PixelGrid grid={PET_FRAMES['RONG_BANG'][GiaiDoan.SO_SINH].IDLE} size={3} />
-                         ) : (
-                            <div className="text-2xl h-[72px] w-[72px] flex items-center justify-center">🔒</div>
-                         )}
+                         <PixelGrid grid={PET_FRAMES['RONG_BANG'][GiaiDoan.SO_SINH].IDLE} size={3} />
                     </div>
-                    <span className={`font-mono text-xs font-bold ${isUnlocked ? 'text-gray-400 group-hover:text-blue-400' : 'text-gray-600'}`}>
-                        {isUnlocked ? 'BĂNG LONG' : '???'}
+                    <span className={`font-mono text-xs font-bold ${isUnlocked ? 'text-gray-400 group-hover:text-blue-400' : 'text-gray-500'}`}>
+                        BĂNG LONG {isUnlocked ? '' : '🔒'}
                     </span>
                 </div>
 
@@ -72,17 +64,13 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                     className={`cursor-pointer group flex flex-col items-center bg-gray-900 border p-3 rounded-xl transition-all shadow-lg
                         ${isUnlocked 
                             ? 'border-gray-700 hover:border-green-600 hover:scale-105 active:scale-95' 
-                            : 'border-gray-800 opacity-60 grayscale'}`}
+                            : 'border-gray-800 opacity-50 grayscale'}`}
                 >
                     <div className={`mb-2 p-2 bg-black/50 rounded-lg ${isUnlocked ? 'group-hover:bg-green-600/10' : ''}`}>
-                         {isUnlocked ? (
-                            <PixelGrid grid={PET_FRAMES['THAN_RUNG'][GiaiDoan.SO_SINH].IDLE} size={3} />
-                         ) : (
-                            <div className="text-2xl h-[72px] w-[72px] flex items-center justify-center">🔒</div>
-                         )}
+                         <PixelGrid grid={PET_FRAMES['THAN_RUNG'][GiaiDoan.SO_SINH].IDLE} size={3} />
                     </div>
-                    <span className={`font-mono text-xs font-bold ${isUnlocked ? 'text-gray-400 group-hover:text-green-600' : 'text-gray-600'}`}>
-                         {isUnlocked ? 'THẦN RỪNG' : '???'}
+                    <span className={`font-mono text-xs font-bold ${isUnlocked ? 'text-gray-400 group-hover:text-green-600' : 'text-gray-500'}`}>
+                         THẦN RỪNG {isUnlocked ? '' : '🔒'}
                     </span>
                 </div>
             </div>
