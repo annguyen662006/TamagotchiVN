@@ -1,7 +1,4 @@
 
-
-
-
 import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
@@ -63,12 +60,17 @@ export const useTamagotchi = () => {
     const [showNotification, setShowNotification] = useState<string | null>(null);
     const [petSpeech, setPetSpeech] = useState<string | null>(null);
     const [lastInteractionTime, setLastInteractionTime] = useState<number>(Date.now());
+    
+    // State cho màn hình chúc mừng
+    const [showCelebration, setShowCelebration] = useState(false);
 
     // --- REFS ---
     const notifTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const actionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const speechTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const sleepStartTime = useRef<number>(0); 
+    const sleepStartTime = useRef<number>(0);
+    // Ref để theo dõi giai đoạn trước đó nhằm phát hiện thời điểm chuyển đổi
+    const prevGiaiDoanRef = useRef<GiaiDoan>(gameState.giaiDoan);
 
     // --- HELPERS ---
     const triggerNotification = (msg: string) => {
@@ -99,6 +101,16 @@ export const useTamagotchi = () => {
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }, [gameState]);
+
+    // Detect Evolution to Show Celebration
+    useEffect(() => {
+        // Chỉ hiện chúc mừng nếu vừa chuyển từ giai đoạn khác sang TRUONG_THANH
+        if (prevGiaiDoanRef.current !== GiaiDoan.TRUONG_THANH && gameState.giaiDoan === GiaiDoan.TRUONG_THANH) {
+            setShowCelebration(true);
+            playSound('EVOLVE');
+        }
+        prevGiaiDoanRef.current = gameState.giaiDoan;
+    }, [gameState.giaiDoan]);
 
     // Welcome back logic
     useEffect(() => {
@@ -500,6 +512,7 @@ export const useTamagotchi = () => {
         setMessages([]);
         setShowNotification(null);
         setPetSpeech(null);
+        setShowCelebration(false);
         setLastInteractionTime(Date.now());
     };
 
@@ -508,6 +521,7 @@ export const useTamagotchi = () => {
         setMessages([]);
         setShowNotification(null);
         setPetSpeech(null);
+        setShowCelebration(false);
         setLastInteractionTime(Date.now());
         localStorage.removeItem(STORAGE_KEY);
     };
@@ -523,6 +537,8 @@ export const useTamagotchi = () => {
         petSpeech,
         lastInteractionTime,
         isUnlocked,
+        showCelebration, // Export state
+        setShowCelebration, // Export setter
         handleSelectPet,
         handleAction,
         handleChat,
