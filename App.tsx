@@ -1,6 +1,4 @@
 
-
-
 import { CRTOverlay } from './components/CRTOverlay';
 import { PetScreen } from './components/PetScreen';
 import { GameButton } from './components/GameButton';
@@ -34,13 +32,23 @@ export default function App() {
         
         {/* --- PHẦN 1: MÀN HÌNH GAME (Chiếm phần lớn không gian) --- */}
         <div className="relative flex-1 w-full bg-screen-off overflow-hidden border-b-4 border-gray-800 shadow-[0_10px_20px_rgba(0,0,0,0.5)] z-10">
-            {/* Hiệu ứng CRT áp dụng cho toàn bộ vùng nhìn */}
+            {/* Hiệu ứng CRT áp dụng cho toàn bộ vùng nhìn (z-50) */}
             <CRTOverlay />
             
-            {/* Đường viền neon trang trí phía trên */}
+            {/* Đường viền neon trang trí phía trên (z-20) */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-neon-pink via-neon-blue to-neon-pink opacity-70 z-20"></div>
 
-            {/* Content Layer */}
+            {/* Notification Overlay - Đã di chuyển ra ngoài Content Layer để đảm bảo nằm trên cùng */}
+            {/* Sử dụng z-[60] để cao hơn CRTOverlay (z-50) giúp chữ dễ đọc hơn */}
+            {showNotification && (
+                <div className="absolute top-24 left-1/2 -translate-x-1/2 w-3/4 max-w-sm pointer-events-none z-[60]">
+                    <div className="bg-black/90 border-2 border-neon-blue text-neon-blue px-4 py-2 rounded shadow-[0_0_15px_#00ffff] text-center animate-pulse">
+                        <span className="font-bold text-lg tracking-wider block">{showNotification}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Content Layer (z-10) chứa Pet và Game World */}
             <div className="relative z-10 w-full h-full flex flex-col">
                 {!gameState.loaiThu ? (
                     <SelectionScreen onSelect={handleSelectPet} isUnlocked={isUnlocked} />
@@ -60,15 +68,6 @@ export default function App() {
                         lastInteractionTime={lastInteractionTime}
                     />
                 )}
-
-                {/* Notification Overlay - Canh giữa màn hình game */}
-                {showNotification && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 max-w-sm">
-                        <div className="bg-black/90 border-2 border-neon-blue text-neon-blue px-4 py-3 rounded shadow-[0_0_15px_#00ffff] z-50 text-center animate-pulse">
-                            <span className="font-bold text-lg tracking-wider block">{showNotification}</span>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
 
@@ -84,7 +83,7 @@ export default function App() {
 
             {/* Branding Text */}
             <div className="text-center">
-                <span className="text-[10px] text-gray-500 font-mono tracking-[0.5em] uppercase">Cyber-Pet v2.0</span>
+                <span className="text-[10px] text-gray-500 font-mono tracking-[0.5em] uppercase">GAME TUỔI THƠ</span>
             </div>
 
             {/* Button Grid Container */}
