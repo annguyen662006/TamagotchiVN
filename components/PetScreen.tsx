@@ -98,15 +98,15 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
   let animationClass = 'animate-float';
   if (hoatDongHienTai === 'CHOI') animationClass = 'animate-bounce';
   if (hoatDongHienTai === 'TU_CHOI') animationClass = 'animate-shake';
-  if (giaiDoan === GiaiDoan.HON_MA) animationClass = 'opacity-50';
+  if (giaiDoan === GiaiDoan.HON_MA) animationClass = 'animate-float-ghost opacity-90'; // Changed to specific ghost animation
   if (isIdleWalking) animationClass = 'animate-walk';
 
   const showStats = giaiDoan !== GiaiDoan.TRUNG && giaiDoan !== GiaiDoan.NUT_VO && giaiDoan !== GiaiDoan.HON_MA;
 
   // Determine Pixel Size based on Entity
-  // Ghost is small (8x8), so use size 10 to make it visible
-  // Chicken is big (24x24), so use size 5 to fit screen
-  const petPixelSize = giaiDoan === GiaiDoan.HON_MA ? 10 : 5;
+  // Chicken (24x24) and Ghost (24x24) now both use size 5
+  // Previous logic used size 10 for small ghosts (8x8)
+  const petPixelSize = 5;
 
   return (
     <div className={`relative w-full h-full ${bgStyle} transition-colors duration-[3000ms] overflow-hidden flex flex-col items-center justify-center`}>

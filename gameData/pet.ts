@@ -5,6 +5,7 @@ import {
   CHICKEN_TEEN_24, 
   CHICKEN_ADULT_24 
 } from './chicken';
+import { PET_GHOST_24 } from './ghost';
 
 /**
  * MAPPING DỮ LIỆU CỤ THỂ SANG GIAI ĐOẠN CHUNG
@@ -18,18 +19,8 @@ export const STAGE_3_BABY = CHICKEN_BABY_24;
 export const STAGE_4_TEEN = CHICKEN_TEEN_24;
 export const STAGE_5_ADULT = CHICKEN_ADULT_24;
 
-// CÁC THỰC THỂ KHÁC (Giữ nguyên kích thước nhỏ hoặc nâng cấp sau)
-// Ghost (8x8)
-export const GHOST = [
-  [0,0,0,1,1,0,0,0],
-  [0,0,1,1,1,1,0,0],
-  [0,1,0,1,1,0,1,0],
-  [0,1,1,1,1,1,1,0],
-  [0,1,1,1,1,1,1,0],
-  [0,1,0,1,0,1,1,0],
-  [0,1,0,1,0,1,0,0],
-  [0,0,0,0,0,0,0,0],
-];
+// Ghost (24x24)
+export const GHOST = PET_GHOST_24;
 
 // Poop (8x8)
 export const POOP = [

@@ -29,6 +29,11 @@ const PALETTE: Record<number, string> = {
   // Poop Colors
   13: '#5d4037', // Nâu đậm (Poop)
   14: '#a1887f', // Nâu sáng (Highlight)
+
+  // Ghost Colors (Hệ Tâm linh)
+  30: '#F0F8FF', // Trắng xanh nhạt (AliceBlue) - Thân
+  31: '#B0C4DE', // Xanh xám nhạt (LightSteelBlue) - Viền
+  32: '#708090', // Xanh xám đậm (SlateGray) - Mắt
 };
 
 export const PixelGrid: React.FC<PixelGridProps> = ({ grid, color, className = "", size = 4 }) => {
