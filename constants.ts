@@ -1,7 +1,7 @@
-import { GiaiDoan, LoaiThu } from './types';
+import { GiaiDoan } from './types';
 import { STAGE_1_EGG, STAGE_2_CRACKED, STAGE_3_BABY, STAGE_4_TEEN, STAGE_5_ADULT, GHOST, POOP } from './gameData/pet';
 import { PHOENIX_EGG, PHOENIX_CRACKED, PHOENIX_BABY, PHOENIX_TEEN, PHOENIX_ADULT } from './gameData/phoenix';
-import { DRAGON_EGG, DRAGON_BABY, DRAGON_ADULT } from './gameData/dragon';
+import { DRAGON_EGG, DRAGON_CRACKED, DRAGON_BABY, DRAGON_TEEN, DRAGON_ADULT } from './gameData/dragon';
 import { FOREST_EGG, FOREST_CRACKED, FOREST_BABY, FOREST_TEEN, FOREST_ADULT } from './gameData/treant';
 
 // Re-export everything for compatibility
@@ -35,9 +35,9 @@ const PHOENIX_FRAMES = {
 // Mapping frames for Ice Dragon
 const DRAGON_FRAMES = {
   [GiaiDoan.TRUNG]: { IDLE: DRAGON_EGG, HAPPY: DRAGON_EGG },
-  [GiaiDoan.NUT_VO]: { IDLE: DRAGON_EGG, HAPPY: DRAGON_EGG },
+  [GiaiDoan.NUT_VO]: { IDLE: DRAGON_CRACKED, HAPPY: DRAGON_CRACKED },
   [GiaiDoan.SO_SINH]: { IDLE: DRAGON_BABY, HAPPY: DRAGON_BABY },
-  [GiaiDoan.THIEU_NIEN]: { IDLE: DRAGON_BABY, HAPPY: DRAGON_BABY }, 
+  [GiaiDoan.THIEU_NIEN]: { IDLE: DRAGON_TEEN, HAPPY: DRAGON_TEEN }, 
   [GiaiDoan.TRUONG_THANH]: { IDLE: DRAGON_ADULT, HAPPY: DRAGON_ADULT },
   [GiaiDoan.HON_MA]: { IDLE: GHOST, HAPPY: GHOST },
   POOP: POOP
