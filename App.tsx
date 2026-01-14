@@ -145,24 +145,54 @@ export default function App() {
         let shouldWake = false;
         let shouldSleepy = false;
 
-        // Auto Wake Up at Dawn (Start of Day cycle)
+        // --- Stats Logic (Calculated first to check energy conditions) ---
+        const decay = prev.dangNgu ? 1 : 3; // Slower decay when sleeping
+        
+        let newDoi = Math.min(prev.chiSo.doi + (prev.dangNgu ? 1 : 2), MAX_CHI_SO);
+        let newVui = Math.max(prev.chiSo.vui - decay, 0);
+        let newNangLuong = prev.chiSo.nangLuong;
+        
+        // Energy logic
+        if (prev.dangNgu) {
+            newNangLuong = Math.min(prev.chiSo.nangLuong + 5, MAX_CHI_SO);
+        } else {
+            // Drain energy faster if it's night and not sleeping
+            const drainRate = isNight ? 3 : 1;
+            newNangLuong = Math.max(prev.chiSo.nangLuong - drainRate, 0);
+        }
+
+        // --- Auto Wake Up at Dawn (Start of Day cycle) ---
         if (prev.dangNgu && isDay) {
-            // Using a small buffer (tick 0-2) to ensure it triggers
-            if (timeOfDay < 2) {
+            // Check if battery is sufficient (> 30%) to wake up automatically
+            if (timeOfDay < 2 && newNangLuong >= 30) {
                 shouldWake = true;
             }
         }
 
-        // Get Sleepy at Night
+        // --- Get Sleepy at Night ---
         if (!prev.dangNgu && isNight) {
             shouldSleepy = true;
         }
 
+        // --- FORCED SLEEP LOGIC (New Feature) ---
+        // If it's night and energy < 10%, force sleep.
+        let forceSleep = false;
+        if (isNight && !prev.dangNgu && newNangLuong < 10) {
+            forceSleep = true;
+        }
+
+        // Trigger Notifications for State Changes
         if (shouldWake) {
-            // Trigger Side Effect outside of state reducer
             setTimeout(() => {
                 triggerNotification("Trời sáng rồi! Dậy thôi!");
                 triggerSpeech("Oáp... Sáng rồi!");
+            }, 0);
+        }
+
+        if (forceSleep) {
+            setTimeout(() => {
+                triggerNotification("Pin yếu (<10%)! Tự động ngủ.");
+                triggerSpeech("Sập nguồn...", 2000);
             }, 0);
         }
 
@@ -183,22 +213,6 @@ export default function App() {
             newGiaiDoan = GiaiDoan.TRUONG_THANH;
         }
 
-        // --- Stats Logic ---
-        const decay = prev.dangNgu ? 1 : 3; // Slower decay when sleeping
-        
-        let newDoi = Math.min(prev.chiSo.doi + (prev.dangNgu ? 1 : 2), MAX_CHI_SO);
-        let newVui = Math.max(prev.chiSo.vui - decay, 0);
-        let newNangLuong = prev.chiSo.nangLuong;
-        
-        // Energy logic
-        if (prev.dangNgu) {
-            newNangLuong = Math.min(prev.chiSo.nangLuong + 5, MAX_CHI_SO);
-        } else {
-            // Drain energy faster if it's night and not sleeping
-            const drainRate = isNight ? 3 : 1;
-            newNangLuong = Math.max(prev.chiSo.nangLuong - drainRate, 0);
-        }
-
         // Hygiene Logic
         let newVeSinh = prev.chiSo.veSinh;
         if (prev.phan > 0) {
@@ -207,7 +221,7 @@ export default function App() {
 
         // Poop generation logic
         let newPhan = prev.phan;
-        if (!prev.dangNgu && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO && Math.random() < 0.1) {
+        if (!prev.dangNgu && !forceSleep && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO && Math.random() < 0.1) {
              newPhan = Math.min(prev.phan + 1, 4);
              newVeSinh = Math.max(newVeSinh - 5, 0);
         }
@@ -240,7 +254,9 @@ export default function App() {
         }
 
         // --- Chatter / Complaints ---
-        if (!prev.dangNgu && newGiaiDoan !== GiaiDoan.HON_MA && newGiaiDoan !== GiaiDoan.TRUNG && newGiaiDoan !== GiaiDoan.NUT_VO) {
+        const isSleepingNow = shouldWake ? false : (forceSleep ? true : prev.dangNgu);
+
+        if (!isSleepingNow && newGiaiDoan !== GiaiDoan.HON_MA && newGiaiDoan !== GiaiDoan.TRUNG && newGiaiDoan !== GiaiDoan.NUT_VO) {
              // Priority 1: Sleepy at Night (Even at 50% energy)
              if (shouldSleepy && newNangLuong < 50 && Math.random() < 0.3) {
                  triggerSpeech("Buồn ngủ quá...", 3000); 
@@ -266,14 +282,14 @@ export default function App() {
           tuoi: prev.tuoi + 1,
           biOm: isSick,
           phan: newPhan,
-          dangNgu: shouldWake ? false : prev.dangNgu,
+          dangNgu: isSleepingNow,
           chiSo: {
             doi: newDoi,
             vui: newVui,
             veSinh: newVeSinh,
             nangLuong: newNangLuong
           },
-          hoatDongHienTai: shouldWake ? 'DUNG_YEN' : prev.hoatDongHienTai
+          hoatDongHienTai: shouldWake ? 'DUNG_YEN' : (forceSleep ? 'NGU' : prev.hoatDongHienTai)
         };
       });
     }, TOC_DO_TICK);
@@ -364,10 +380,17 @@ export default function App() {
             break;
 
         case 'WAKE':
-            updates.dangNgu = false;
-            updates.hoatDongHienTai = 'DUNG_YEN';
-            triggerNotification("Dậy rồi!");
-            triggerSpeech("Oáp...");
+            // Check if Energy is sufficient to wake up
+            if (prev.chiSo.nangLuong < 30) {
+                shouldRefuse = true;
+                triggerNotification("Cần sạc > 30% để dậy!");
+                triggerSpeech("... (Pin yếu)");
+            } else {
+                updates.dangNgu = false;
+                updates.hoatDongHienTai = 'DUNG_YEN';
+                triggerNotification("Dậy rồi!");
+                triggerSpeech("Oáp...");
+            }
             break;
 
         case 'CURE':
@@ -385,8 +408,13 @@ export default function App() {
       }
 
       if (shouldRefuse) {
-          updates.hoatDongHienTai = 'TU_CHOI';
-          resetActionAfterDelay(500);
+          // If refused wake, keep sleeping
+          if (action === 'WAKE') {
+             updates.hoatDongHienTai = 'NGU'; 
+          } else {
+             updates.hoatDongHienTai = 'TU_CHOI';
+             resetActionAfterDelay(500);
+          }
           return updates;
       }
 
