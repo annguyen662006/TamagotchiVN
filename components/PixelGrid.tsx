@@ -43,6 +43,22 @@ const PALETTE: Record<number, string> = {
   30: '#F0F8FF', // Trắng xanh nhạt (AliceBlue) - Thân
   31: '#B0C4DE', // Xanh xám nhạt (LightSteelBlue) - Viền
   32: '#708090', // Xanh xám đậm (SlateGray) - Mắt
+
+  // Màu hệ Băng (Ice Dragon)
+  40: '#00008B', // Xanh dương đậm (Viền, vảy tối)
+  41: '#1E90FF', // Xanh dương tươi (Thân chính)
+  42: '#00BFFF', // Xanh da trời (Điểm sáng)
+  43: '#E0FFFF', // Trắng xanh (Bụng, móng vuốt, băng tuyết)
+  44: '#FFFFFF', // Trắng tinh (Mắt, phản quang)
+  45: '#483D8B', // Xanh tím than (Gai lưng, sừng)
+
+  // Màu hệ Mộc (Forest Guardian)
+  50: '#006400', // Xanh lá đậm (Viền lá, bóng tối)
+  51: '#228B22', // Xanh lá cây chuẩn (Thân lá chính)
+  52: '#7CFC00', // Xanh lá mạ sáng (Chồi non, điểm sáng)
+  53: '#8B4513', // Nâu gỗ đậm (Vỏ hạt, thân cây)
+  54: '#D2691E', // Nâu gỗ sáng (Điểm sáng trên thân gỗ)
+  55: '#FF69B4', // Hồng (Hoa nở khi trưởng thành - điểm nhấn)
 };
 
 export const PixelGrid: React.FC<PixelGridProps> = ({ grid, color, className = "", size = 4 }) => {
