@@ -18,6 +18,7 @@ export default function App() {
       showNotification,
       petSpeech,
       lastInteractionTime,
+      isUnlocked,
       handleSelectPet,
       handleAction,
       handleChat,
@@ -42,7 +43,7 @@ export default function App() {
                 <div className="relative z-10 w-full h-full flex flex-col">
                     
                     {!gameState.loaiThu ? (
-                        <SelectionScreen onSelect={handleSelectPet} />
+                        <SelectionScreen onSelect={handleSelectPet} isUnlocked={isUnlocked} />
                     ) : isChatMode ? (
                         <ChatInterface 
                             gameState={gameState}

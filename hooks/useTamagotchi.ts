@@ -5,6 +5,7 @@ import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, N
 import { chatVoiThuCung } from '../services/geminiService';
 
 const STORAGE_KEY = 'neon_pet_save_data_v2';
+const UNLOCK_KEY = 'neon_pet_unlocked_all';
 
 const KHOI_TAO: TrangThaiGame = {
   loaiThu: null,
@@ -42,6 +43,14 @@ export const useTamagotchi = () => {
             }
         }
         return KHOI_TAO;
+    });
+
+    // Unlock status
+    const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem(UNLOCK_KEY) === 'true';
+        }
+        return false;
     });
 
     const [messages, setMessages] = useState<TinNhan[]>([]);
@@ -180,6 +189,13 @@ export const useTamagotchi = () => {
                 } else if (prev.giaiDoan === GiaiDoan.THIEU_NIEN && prev.tuoi >= NGUONG_TRUONG_THANH) {
                     triggerNotification("Đã trưởng thành oai vệ!");
                     newGiaiDoan = GiaiDoan.TRUONG_THANH;
+                    
+                    // Unlock Mechanic
+                    if (prev.loaiThu === 'GA' && !isUnlocked) {
+                        localStorage.setItem(UNLOCK_KEY, 'true');
+                        setIsUnlocked(true);
+                        setTimeout(() => triggerNotification("ĐÃ MỞ KHOÁ PET THẦN THOẠI!"), 2500);
+                    }
                 }
 
                 // Hygiene & Poop
@@ -261,11 +277,16 @@ export const useTamagotchi = () => {
         }, TOC_DO_TICK);
 
         return () => clearInterval(interval);
-    }, [gameState.giaiDoan, gameState.dangNgu, gameState.loaiThu]);
+    }, [gameState.giaiDoan, gameState.dangNgu, gameState.loaiThu, isUnlocked]);
 
     // --- ACTIONS ---
 
     const handleSelectPet = (type: LoaiThu) => {
+        if (type !== 'GA' && !isUnlocked) {
+            triggerNotification("Nuôi Gà trưởng thành để mở khoá!");
+            return;
+        }
+
         setGameState({
             ...KHOI_TAO,
             loaiThu: type
@@ -340,10 +361,16 @@ export const useTamagotchi = () => {
                     break;
 
                 case 'SLEEP':
-                    updates.dangNgu = true;
-                    updates.hoatDongHienTai = 'NGU';
-                    sleepStartTime.current = Date.now();
-                    triggerNotification("Chúc ngủ ngon...");
+                    if (!isNight && prev.chiSo.nangLuong > 30) {
+                        shouldRefuse = true;
+                        triggerNotification("Chưa buồn ngủ (Pin > 30%)");
+                        triggerSpeech("Còn sớm mà!");
+                    } else {
+                        updates.dangNgu = true;
+                        updates.hoatDongHienTai = 'NGU';
+                        sleepStartTime.current = Date.now();
+                        triggerNotification("Chúc ngủ ngon...");
+                    }
                     break;
 
                 case 'WAKE':
@@ -421,6 +448,7 @@ export const useTamagotchi = () => {
         showNotification,
         petSpeech,
         lastInteractionTime,
+        isUnlocked,
         handleSelectPet,
         handleAction,
         handleChat,
