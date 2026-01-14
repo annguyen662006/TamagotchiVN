@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Tamagotchi VN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'neon-pink': '#ff00ff',
+              'neon-blue': '#00ffff',
+              'neon-green': '#00ff00',
+              'screen-bg': '#1a1a1a',
+              'screen-off': '#0f0f0f',
+            },
+            fontFamily: {
+              mono: ['"Courier New"', 'Courier', 'monospace'],
+            },
+            animation: {
+              'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float': 'float 3s ease-in-out infinite',
+              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+              'walk': 'walk 10s linear infinite',
+              'cloud-drift': 'drift 20s ease-in-out infinite alternate',
+              'sway': 'sway 3s ease-in-out infinite',
+              'sway-slow': 'sway 5s ease-in-out infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-5px)' },
+              },
+              drift: {
+                '0%': { transform: 'translateX(-20px)' },
+                '100%': { transform: 'translateX(20px)' },
+              },
+              sway: {
+                '0%, 100%': { transform: 'rotate(-3deg)' },
+                '50%': { transform: 'rotate(3deg)' },
+              },
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+              },
+              walk: {
+                '0%': { transform: 'translateX(-40px) scaleX(1)' },
+                '45%': { transform: 'translateX(40px) scaleX(1)' },
+                '50%': { transform: 'translateX(40px) scaleX(-1)' }, // Flip at the edge
+                '95%': { transform: 'translateX(-40px) scaleX(-1)' },
+                '100%': { transform: 'translateX(-40px) scaleX(1)' }, // Return to start
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+      body {
+        font-family: 'VT323', monospace;
+        background-color: #050505;
+        overflow: hidden;
+      }
+      /* Custom scrollbar for chat */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1a1a1a; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #00ffff; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #ff00ff; 
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
