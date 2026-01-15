@@ -148,6 +148,7 @@ export const useTamagotchi = () => {
             setGameState(prev => {
                 if (!prev.loaiThu || prev.giaiDoan === GiaiDoan.HON_MA) return prev;
 
+                const isAdult = prev.giaiDoan === GiaiDoan.TRUONG_THANH;
                 const timeOfDay = prev.tuoi % TICKS_PER_DAY;
                 const isNight = timeOfDay >= (TICKS_PER_DAY * 0.75);
                 const isDay = !isNight;
@@ -155,7 +156,11 @@ export const useTamagotchi = () => {
                 let shouldWake = false;
                 let shouldSleepy = false;
 
-                const decay = prev.dangNgu ? 1 : 3;
+                // LOGIC: Giảm chỉ số Vui
+                // Nếu là người lớn (Adult), chỉ số vui giảm chậm hơn (1) so với trẻ con (3)
+                const baseDecay = isAdult ? 1 : 3;
+                const decay = prev.dangNgu ? 1 : baseDecay;
+                
                 let newDoi = Math.min(prev.chiSo.doi + (prev.dangNgu ? 1 : 2), MAX_CHI_SO);
                 let newVui = Math.max(prev.chiSo.vui - decay, 0);
                 let newNangLuong = prev.chiSo.nangLuong;
@@ -165,6 +170,17 @@ export const useTamagotchi = () => {
                 } else {
                     const drainRate = isNight ? 3 : 1;
                     newNangLuong = Math.max(prev.chiSo.nangLuong - drainRate, 0);
+                }
+
+                // LOGIC: Tự động ăn (Chỉ dành cho Adult)
+                if (isAdult && newDoi >= 80 && !prev.dangNgu) {
+                    newDoi = 30; // Ăn no vừa phải
+                    // Sử dụng setTimeout để tránh update state trong lúc render (nếu triggerNotification có set state)
+                    setTimeout(() => {
+                        triggerNotification("Tự ăn (Trưởng thành)");
+                        triggerSpeech("Tự lo được!", 2000);
+                        playSound('FEED');
+                    }, 0);
                 }
 
                 // Auto wake: Khi trời sáng (Day) và Pin >= 60%
@@ -241,7 +257,11 @@ export const useTamagotchi = () => {
                 }
 
                 let newPhan = prev.phan;
-                if (!prev.dangNgu && !forceSleep && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO && Math.random() < 0.1) {
+                // LOGIC: Tỷ lệ đi vệ sinh
+                // Adult: 2% (0.02), Bé: 10% (0.1)
+                const poopChance = isAdult ? 0.02 : 0.1;
+                
+                if (!prev.dangNgu && !forceSleep && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO && Math.random() < poopChance) {
                     newPhan = Math.min(prev.phan + 1, 4);
                     newVeSinh = Math.max(newVeSinh - 5, 0);
                     if (Math.random() < 0.5) playSound('REFUSE'); // Âm thanh rặn/poop
@@ -250,14 +270,23 @@ export const useTamagotchi = () => {
                 // Sickness
                 let isSick = prev.biOm;
                 if (!isSick && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO) {
-                    const poorHygiene = newVeSinh <= 50;
+                    // LOGIC: Ngưỡng vệ sinh gây bệnh
+                    // Adult: chịu bẩn tốt hơn (<= 20 mới bệnh), Bé: <= 50 là bệnh
+                    const hygieneThreshold = isAdult ? 20 : 50;
+                    
+                    const poorHygiene = newVeSinh <= hygieneThreshold;
                     if (poorHygiene) {
                         isSick = true;
-                        triggerNotification("Bẩn quá! Thú cưng bị bệnh.");
+                        triggerNotification(isAdult ? "Bẩn kinh khủng! Bệnh rồi." : "Bẩn quá! Thú cưng bị bệnh.");
                         playSound('WARNING');
                     } else {
-                        const overEating = newDoi > 90;
-                        const randomFlu = Math.random() < 0.01; 
+                        const overEating = newDoi > 90; // Vẫn giữ nguyên vì nếu người dùng cố nhồi nhét thì vẫn bệnh
+                        
+                        // LOGIC: Bệnh ngẫu nhiên (Cảm cúm)
+                        // Adult: 0.1% (Gần như không bệnh), Bé: 1%
+                        const fluChance = isAdult ? 0.001 : 0.01;
+                        
+                        const randomFlu = Math.random() < fluChance; 
                         if (overEating || randomFlu) {
                             isSick = true;
                             triggerNotification("Thú cưng đang bệnh!");
@@ -287,7 +316,7 @@ export const useTamagotchi = () => {
                         triggerSpeech("Buồn ngủ quá...", 3000); 
                         if (shouldPlaySound) playSound('WARNING');
                     }
-                    else if (newDoi > 80) {
+                    else if (newDoi > 80 && !isAdult) { // Adult tự ăn nên ít kêu đói
                         triggerSpeech("Đói quá...", 3000);
                         if (shouldPlaySound) playSound('WARNING');
                     }
