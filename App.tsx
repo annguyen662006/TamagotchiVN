@@ -156,7 +156,7 @@ export default function App() {
                             <GameButton 
                                 label="CHAT" 
                                 icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/chat.png" 
-                                onClick={() => setIsChatMode(true)} 
+                                onClick={() => setIsChatMode(prev => !prev)} 
                                 color="bg-purple-400"
                                 active={isChatMode}
                             />

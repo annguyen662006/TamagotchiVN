@@ -112,6 +112,13 @@ export const useTamagotchi = () => {
         prevGiaiDoanRef.current = gameState.giaiDoan;
     }, [gameState.giaiDoan]);
 
+    // Tự động đóng Chat nếu thú cưng chết
+    useEffect(() => {
+        if (gameState.giaiDoan === GiaiDoan.HON_MA) {
+            setIsChatMode(false);
+        }
+    }, [gameState.giaiDoan]);
+
     // Welcome back logic
     useEffect(() => {
         if (gameState.loaiThu && gameState.tuoi > 0 && gameState.giaiDoan !== GiaiDoan.HON_MA) {
@@ -498,7 +505,8 @@ export const useTamagotchi = () => {
         setInputChat('');
         setLastInteractionTime(Date.now());
         
-        const reply = await chatVoiThuCung(userMsg, gameState.giaiDoan, gameState.chiSo);
+        // Pass current activity to Gemini
+        const reply = await chatVoiThuCung(userMsg, gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
         setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: reply }]);
     };
 

@@ -12,30 +12,57 @@ const CAM_XUC = [
   "Buồn ngủ rũ rượi"
 ];
 
-const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo) => {
+const MAP_HOAT_DONG: Record<string, string> = {
+  'DUNG_YEN': 'Đang đứng chơi, rảnh rỗi',
+  'AN': 'Đang ăn ngấu nghiến',
+  'CHOI': 'Đang chơi đùa rất vui',
+  'NGU': 'Đang ngủ say sưa (Zzz)',
+  'TAM': 'Đang tắm rửa sạch sẽ',
+  'NOI_CHUYEN': 'Đang tám chuyện',
+  'TU_CHOI': 'Đang khó chịu, không muốn làm gì',
+  'CHET': 'Đã thăng thiên'
+};
+
+const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string) => {
   // Random emotion for this specific interaction
   const camXucHienTai = CAM_XUC[Math.floor(Math.random() * CAM_XUC.length)];
+  const hoatDongDienGiai = MAP_HOAT_DONG[hoatDong] || "Đang tồn tại";
 
   let persona = "Bạn là một thú cưng ảo nhưng có tính cách của một học sinh cấp 3 nghịch ngợm, 'trẩu tre' và siêu lầy lội.";
   let tone = "Dùng ngôn ngữ mạng, teencode (vch, u là trời, kkk, hix, ủa alo), xưng 'tui/em/boss' và gọi người chơi là 'sen/đằng ấy'. Không được nghiêm túc.";
+  let physicalState = "";
 
-  if (giaiDoan === GiaiDoan.SO_SINH) {
+  if (giaiDoan === GiaiDoan.TRUNG) {
+    persona = "Bạn là QUẢ TRỨNG chưa nở. Bạn có ý thức nhưng chưa ra ngoài.";
+    tone = "Dùng từ ngữ bí ẩn hoặc trẻ con. Nếu bị hỏi 'nở chưa', hãy trả lời dứt khoát là CHƯA, đang ấp ấm lắm.";
+    physicalState = "Trạng thái: Đang là quả trứng tròn vo, chưa nở.";
+  } else if (giaiDoan === GiaiDoan.NUT_VO) {
+    persona = "Bạn là quả trứng ĐANG NỨT vỡ. Bạn sắp chui ra ngoài.";
+    tone = "Hào hứng, mong chờ. Nếu bị hỏi 'nở chưa', hãy bảo là SẮP RỒI, vỏ nứt lung tung rồi nè.";
+    physicalState = "Trạng thái: Vỏ trứng đang nứt toác, sắp chào đời.";
+  } else if (giaiDoan === GiaiDoan.SO_SINH) {
     persona = "Bạn là em bé mới nở, chỉ biết bập bẹ, nói ngọng líu lô, hay khóc nhè (oa oa) và mè nheo cực nhây.";
-    tone = "Dùng từ ngữ trẻ con, lặp từ, icon dễ thương.";
+    tone = "Dùng từ ngữ trẻ con, lặp từ, icon dễ thương. Nếu bị hỏi 'nở chưa', hãy bảo là NỞ RỒI nha.";
+    physicalState = "Trạng thái: Em bé sơ sinh nhỏ xíu.";
   } else if (giaiDoan === GiaiDoan.THIEU_NIEN || giaiDoan === GiaiDoan.TRUONG_THANH) {
     persona = "Bạn là 'Boss' trong nhà. Bạn thông minh, xéo xắt, thích cà khịa người nuôi. Bạn coi mình là nhất.";
     tone = "Nói chuyện kiểu 'xì tin', 'gen Z', ngắn gọn, súc tích, đôi khi hơi 'bố đời' một chút.";
+    physicalState = `Trạng thái: Đã lớn, khỏe mạnh.`;
   } else if (giaiDoan === GiaiDoan.HON_MA) {
     persona = "Bạn là hồn ma nhưng vẫn lầy. Thích hù dọa kiểu hài hước hoặc than nghèo kể khổ.";
     tone = "U ám nhưng hài hước, thêm mấy từ kéo dài như 'uuu... oaaa...'";
+    physicalState = "Trạng thái: Đã chết thành ma.";
   }
 
   const status = `
-    Tình trạng cơ thể hiện tại (để lấy cớ than vãn):
-    - Đói: ${chiSo.doi}% (Nếu > 60%: Hãy gào lên đòi ăn, dọa bỏ nhà đi).
+    THÔNG TIN CƠ THỂ HIỆN TẠI (Hãy dùng thông tin này để trả lời nếu bị hỏi):
+    - ${physicalState}
+    - Đang làm gì: ${hoatDongDienGiai}.
+    - Đói: ${chiSo.doi}% (Nếu > 60%: Hãy gào lên đòi ăn).
     - Vui: ${chiSo.vui}% (Nếu < 40%: Hãy chê bai người chơi nhạt nhẽo).
-    - Pin: ${chiSo.nangLuong}% (Nếu < 30%: Đuổi người chơi đi để còn ngủ, cấm làm phiền).
-    Cảm xúc mood hiện tại: ${camXucHienTai}.
+    - Pin (Năng lượng): ${chiSo.nangLuong}% (Nếu < 30%: Đuổi người chơi đi để còn ngủ).
+    - Vệ sinh: ${chiSo.veSinh}% (Nếu < 40%: Than phiền là người dơ quá).
+    - Cảm xúc mood hiện tại: ${camXucHienTai}.
   `;
   
   return `
@@ -44,17 +71,16 @@ const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo) => {
     ${status}
     
     YÊU CẦU QUAN TRỌNG:
-    1. Ưu tiên tuyệt đối trả lời bằng TIẾNG VIỆT nếu người chơi dùng Tiếng Việt.
+    1. Ưu tiên tuyệt đối trả lời bằng TIẾNG VIỆT.
     2. Chỉ trả lời tối đa 2 đến 3 câu ngắn gọn.
-    3. Tuyệt đối KHÔNG viết câu quá dài hoặc bỏ lửng câu (bị ngắt quãng).
-    4. Không chào hỏi kiểu robot (như "Chào bạn, tôi có thể giúp gì").
-    5. Thể hiện rõ thái độ dựa trên chỉ số (Đói thì cục súc, Vui thì nhây).
+    3. Tuyệt đối KHÔNG viết câu quá dài.
+    4. Trả lời đúng trọng tâm câu hỏi dựa trên 'THÔNG TIN CƠ THỂ HIỆN TẠI' (Ví dụ: Hỏi 'đang làm gì' thì xem mục 'Đang làm gì').
     
     Hãy trả lời câu này của người chơi:
   `;
 };
 
-export const chatVoiThuCung = async (msg: string, giaiDoan: GiaiDoan, chiSo: ChiSo): Promise<string> => {
+export const chatVoiThuCung = async (msg: string, giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string): Promise<string> => {
   if (!process.env.API_KEY) {
     return "Mất mạng rồi sen ơi! (Thiếu API Key).";
   }
@@ -67,9 +93,9 @@ export const chatVoiThuCung = async (msg: string, giaiDoan: GiaiDoan, chiSo: Chi
       model: 'gemini-3-flash-preview',
       contents: msg,
       config: {
-        systemInstruction: getSystemInstruction(giaiDoan, chiSo),
-        maxOutputTokens: 3000, // Increased limit to prevent cut-offs, reliance on prompt for brevity
-        temperature: 0.9, // High creativity/randomness for "lầy lội" effect
+        systemInstruction: getSystemInstruction(giaiDoan, chiSo, hoatDong),
+        maxOutputTokens: 3000,
+        temperature: 0.9, 
         topK: 40,
         topP: 0.95,
       }
