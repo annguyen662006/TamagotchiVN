@@ -139,91 +139,105 @@ export class LiveClient {
   private nextStartTime = 0;
   private stream: MediaStream | null = null;
   private onTranscriptUpdate: (text: string) => void;
+  private onDisconnectCallback: (reason?: string) => void;
   
   // Buffers for accumulating text chunks
   private currentInputTranscript = "";
   private currentOutputTranscript = "";
 
-  constructor(onTranscriptUpdate: (text: string) => void) {
+  constructor(
+      onTranscriptUpdate: (text: string) => void,
+      onDisconnect: (reason?: string) => void
+  ) {
     this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     this.onTranscriptUpdate = onTranscriptUpdate;
+    this.onDisconnectCallback = onDisconnect;
   }
 
   async connect(systemInstruction: string) {
-    if (!process.env.API_KEY) return;
+    if (!process.env.API_KEY) {
+        this.onDisconnectCallback("Thiếu API Key");
+        return;
+    }
 
-    // 1. Setup Audio Contexts
-    this.inputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-    this.outputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    try {
+        // 1. Setup Audio Contexts
+        this.inputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+        this.outputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
-    // 2. Get Mic Stream
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
-    // 3. Connect to Gemini Live
-    const sessionPromise = this.ai.live.connect({
-      model: 'gemini-2.5-flash-native-audio-preview-12-2025',
-      config: {
-        systemInstruction: systemInstruction,
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
-        },
-        inputAudioTranscription: {}, 
-        outputAudioTranscription: {}, 
-      },
-      callbacks: {
-        onopen: () => {
-          console.log("Live Session Connected");
-          this.startAudioStreaming(sessionPromise);
-        },
-        onmessage: async (message: LiveServerMessage) => {
-            // Handle Audio Output
-            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-            if (base64Audio && this.outputAudioCtx) {
-                this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioCtx.currentTime);
-                const audioBytes = decodeBase64(base64Audio);
-                const audioBuffer = await decodeAudioData(audioBytes, this.outputAudioCtx, 24000, 1);
+        // 2. Get Mic Stream
+        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // 3. Connect to Gemini Live
+        const sessionPromise = this.ai.live.connect({
+          model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+          config: {
+            systemInstruction: systemInstruction,
+            responseModalities: [Modality.AUDIO],
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
+            },
+            inputAudioTranscription: {}, 
+            outputAudioTranscription: {}, 
+          },
+          callbacks: {
+            onopen: () => {
+              console.log("Live Session Connected");
+              this.startAudioStreaming(sessionPromise);
+            },
+            onmessage: async (message: LiveServerMessage) => {
+                // Handle Audio Output
+                const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+                if (base64Audio && this.outputAudioCtx) {
+                    this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioCtx.currentTime);
+                    const audioBytes = decodeBase64(base64Audio);
+                    const audioBuffer = await decodeAudioData(audioBytes, this.outputAudioCtx, 24000, 1);
+                    
+                    const source = this.outputAudioCtx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(this.outputAudioCtx.destination);
+                    source.start(this.nextStartTime);
+                    this.nextStartTime += audioBuffer.duration;
+                }
+
+                // Handle Transcriptions (Accumulate Chunks)
+                const inputFragment = message.serverContent?.inputTranscription?.text;
+                if (inputFragment) {
+                    // If user starts speaking again, clear previous model output from bubble
+                    if (this.currentOutputTranscript) this.currentOutputTranscript = "";
+                    
+                    this.currentInputTranscript += inputFragment;
+                    this.onTranscriptUpdate("..."); // Show activity
+                }
                 
-                const source = this.outputAudioCtx.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(this.outputAudioCtx.destination);
-                source.start(this.nextStartTime);
-                this.nextStartTime += audioBuffer.duration;
-            }
+                const outputFragment = message.serverContent?.outputTranscription?.text;
+                if (outputFragment) {
+                     // If model starts speaking, clear previous user input from bubble
+                     if (this.currentInputTranscript) this.currentInputTranscript = "";
+                     
+                     this.currentOutputTranscript += outputFragment;
+                     this.onTranscriptUpdate(`${this.currentOutputTranscript}`);
+                }
 
-            // Handle Transcriptions (Accumulate Chunks)
-            const inputFragment = message.serverContent?.inputTranscription?.text;
-            if (inputFragment) {
-                // If user starts speaking again, clear previous model output from bubble
-                if (this.currentOutputTranscript) this.currentOutputTranscript = "";
-                
-                this.currentInputTranscript += inputFragment;
+                if (message.serverContent?.turnComplete) {
+                    this.currentInputTranscript = "";
+                    this.currentOutputTranscript = "";
+                }
+            },
+            onclose: () => {
+              console.log("Live Session Closed");
+              this.onDisconnectCallback("Kết nối đã đóng");
+            },
+            onerror: (e) => {
+              console.error("Live Session Error", e);
+              this.onDisconnectCallback("Lỗi kết nối Live");
             }
-            
-            const outputFragment = message.serverContent?.outputTranscription?.text;
-            if (outputFragment) {
-                 // If model starts speaking, clear previous user input from bubble
-                 if (this.currentInputTranscript) this.currentInputTranscript = "";
-                 
-                 this.currentOutputTranscript += outputFragment;
-                 this.onTranscriptUpdate(`${this.currentOutputTranscript}`);
-            }
-
-            if (message.serverContent?.turnComplete) {
-                // Optionally handle turn complete logic here
-                this.currentInputTranscript = "";
-                this.currentOutputTranscript = "";
-            }
-        },
-        onclose: () => {
-          console.log("Live Session Closed");
-        },
-        onerror: (e) => {
-          console.error("Live Session Error", e);
-          this.onTranscriptUpdate("Lỗi kết nối...");
-        }
-      }
-    });
+          }
+        });
+    } catch (err) {
+        console.error("Connect Error", err);
+        this.onDisconnectCallback("Không thể khởi tạo kết nối");
+    }
   }
 
   startAudioStreaming(sessionPromise: Promise<any>) {

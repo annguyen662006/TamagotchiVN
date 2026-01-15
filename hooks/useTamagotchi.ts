@@ -102,8 +102,9 @@ export const useTamagotchi = () => {
     const sleepStartTime = useRef<number>(0);
     const prevGiaiDoanRef = useRef<GiaiDoan>(gameState.giaiDoan);
     
-    // Live Client Ref
+    // Live Client Ref & Silence Detection
     const liveClientRef = useRef<LiveClient | null>(null);
+    const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // --- HELPERS ---
     const triggerNotification = (msg: string) => {
@@ -150,37 +151,68 @@ export const useTamagotchi = () => {
         }
     };
     
+    const stopLiveMode = async (reason?: string) => {
+        if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
+            silenceTimeoutRef.current = null;
+        }
+
+        if (liveClientRef.current) {
+            await liveClientRef.current.disconnect();
+            liveClientRef.current = null;
+        }
+        
+        setIsLiveMode(false);
+        setPetSpeech(null);
+        
+        if (reason) {
+            triggerNotification(reason);
+        } else {
+            triggerNotification("Đã tắt Live Chat");
+        }
+    };
+
     const toggleLiveMode = async () => {
         ensureAudioContext();
         if (isLiveMode) {
-            // Stop Live Mode
-            if (liveClientRef.current) {
-                await liveClientRef.current.disconnect();
-                liveClientRef.current = null;
-            }
-            setIsLiveMode(false);
-            setPetSpeech(null);
-            triggerNotification("Đã tắt Live Chat");
+            await stopLiveMode();
         } else {
             // Start Live Mode
             if (!gameState.loaiThu) return;
             
             triggerNotification("Đang kết nối Live...");
             
-            liveClientRef.current = new LiveClient((text) => {
-                // Update speech bubble with transcript
-                // Clear previous timeout to keep bubble persistent during conversation
-                if (speechTimeout.current) clearTimeout(speechTimeout.current);
-                setPetSpeech(text);
-                // Auto hide after 5 seconds of silence
-                speechTimeout.current = setTimeout(() => setPetSpeech(null), 5000);
-            });
+            liveClientRef.current = new LiveClient(
+                (text) => {
+                    // Update speech bubble with transcript
+                    if (speechTimeout.current) clearTimeout(speechTimeout.current);
+                    setPetSpeech(text);
+                    
+                    // Reset silence timer on any transcript update (user speaks or model speaks)
+                    if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+                    
+                    // Set new silence timeout (e.g., 10 seconds of no transcript updates)
+                    silenceTimeoutRef.current = setTimeout(() => {
+                        stopLiveMode("Đã tắt do im lặng...");
+                    }, 10000); 
+                },
+                (reason) => {
+                    // Error callback
+                    console.log("Live Client Disconnected:", reason);
+                    stopLiveMode(reason || "Mất kết nối Live");
+                }
+            );
 
             const systemPrompt = getSystemInstruction(gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
             await liveClientRef.current.connect(systemPrompt);
             
             setIsLiveMode(true);
             setPetSpeech("... (Đang lắng nghe)");
+
+            // Start initial silence timer (in case user never speaks)
+            silenceTimeoutRef.current = setTimeout(() => {
+                stopLiveMode("Đã tắt do im lặng...");
+            }, 10000);
         }
     };
 
@@ -202,6 +234,9 @@ export const useTamagotchi = () => {
             if (liveClientRef.current) {
                 liveClientRef.current.disconnect();
             }
+            if (silenceTimeoutRef.current) {
+                clearTimeout(silenceTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -218,7 +253,7 @@ export const useTamagotchi = () => {
     useEffect(() => {
         if (gameState.giaiDoan === GiaiDoan.HON_MA) {
             setIsChatMode(false);
-            if (isLiveMode) toggleLiveMode(); // Stop live mode if dead
+            if (isLiveMode) stopLiveMode(); // Stop live mode if dead
             stopBGM(); // Stop music when dead
         }
     }, [gameState.giaiDoan]);
@@ -458,7 +493,7 @@ export const useTamagotchi = () => {
 
     const handleSwitchMode = () => {
         ensureAudioContext();
-        if (isLiveMode) toggleLiveMode();
+        if (isLiveMode) stopLiveMode();
         // Save current pet state before switching
         if (gameState.loaiThu) {
             setSavedPets(prev => ({
@@ -587,7 +622,7 @@ export const useTamagotchi = () => {
                         updates.hoatDongHienTai = 'NGU';
                         sleepStartTime.current = Date.now();
                         triggerNotification("Chúc ngủ ngon...");
-                        if (isLiveMode) toggleLiveMode(); // Stop live when sleeping
+                        if (isLiveMode) stopLiveMode("Đi ngủ thôi..."); 
                     }
                     break;
 
@@ -664,7 +699,7 @@ export const useTamagotchi = () => {
         if (!gameState.loaiThu) return;
         playSound('SELECT');
         
-        if (isLiveMode) toggleLiveMode();
+        if (isLiveMode) stopLiveMode();
 
         const type = gameState.loaiThu;
         
@@ -685,7 +720,7 @@ export const useTamagotchi = () => {
     };
 
     const resetGame = () => {
-        if (isLiveMode) toggleLiveMode();
+        if (isLiveMode) stopLiveMode();
 
         if (gameState.loaiThu) {
             const currentType = gameState.loaiThu;
