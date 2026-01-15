@@ -114,7 +114,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     onChange={e => setInputChat(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleChat()}
                     disabled={isThinking}
-                    className="flex-1 bg-black text-white border border-gray-600 px-3 py-3 text-sm outline-none focus:border-neon-blue rounded-md shadow-inner disabled:opacity-50"
+                    className="flex-1 bg-black text-white border border-gray-600 px-3 py-3 text-sm outline-none focus:border-neon-blue rounded-md shadow-inner disabled:opacity-50 ml-14"
                     placeholder={isThinking ? "Đang trả lời..." : "Nhập tin nhắn..."}
                 />
                 <button 
