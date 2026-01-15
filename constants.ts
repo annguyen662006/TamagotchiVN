@@ -1,8 +1,14 @@
+
+
+
+
 import { GiaiDoan } from './types';
 import { STAGE_1_EGG, STAGE_2_CRACKED, STAGE_3_BABY, STAGE_4_TEEN, STAGE_5_ADULT, GHOST, POOP } from './gameData/pet';
 import { PHOENIX_EGG, PHOENIX_CRACKED, PHOENIX_BABY, PHOENIX_TEEN, PHOENIX_ADULT } from './gameData/phoenix';
 import { DRAGON_EGG, DRAGON_CRACKED, DRAGON_BABY, DRAGON_TEEN, DRAGON_ADULT } from './gameData/dragon';
 import { FOREST_EGG, FOREST_CRACKED, FOREST_BABY, FOREST_TEEN, FOREST_ADULT } from './gameData/treant';
+import { THUNDER_EGG, THUNDER_CRACKED, THUNDER_BABY, THUNDER_TEEN, THUNDER_ADULT } from './gameData/thunder';
+import { SHADOW_EGG, SHADOW_CRACKED, SHADOW_BABY, SHADOW_TEEN, SHADOW_ADULT } from './gameData/shadow';
 
 // Re-export everything for compatibility
 export * from './gameData/config';
@@ -54,12 +60,36 @@ const TREANT_FRAMES = {
   POOP: POOP
 };
 
+// Mapping frames for Thunder God (Raiju)
+const THUNDER_FRAMES = {
+  [GiaiDoan.TRUNG]: { IDLE: THUNDER_EGG, HAPPY: THUNDER_EGG },
+  [GiaiDoan.NUT_VO]: { IDLE: THUNDER_CRACKED, HAPPY: THUNDER_CRACKED },
+  [GiaiDoan.SO_SINH]: { IDLE: THUNDER_BABY, HAPPY: THUNDER_BABY },
+  [GiaiDoan.THIEU_NIEN]: { IDLE: THUNDER_TEEN, HAPPY: THUNDER_TEEN }, 
+  [GiaiDoan.TRUONG_THANH]: { IDLE: THUNDER_ADULT, HAPPY: THUNDER_ADULT },
+  [GiaiDoan.HON_MA]: { IDLE: GHOST, HAPPY: GHOST },
+  POOP: POOP
+};
+
+// Mapping frames for Nightmare Horse (Hac Ma)
+const SHADOW_FRAMES = {
+  [GiaiDoan.TRUNG]: { IDLE: SHADOW_EGG, HAPPY: SHADOW_EGG },
+  [GiaiDoan.NUT_VO]: { IDLE: SHADOW_CRACKED, HAPPY: SHADOW_CRACKED },
+  [GiaiDoan.SO_SINH]: { IDLE: SHADOW_BABY, HAPPY: SHADOW_BABY },
+  [GiaiDoan.THIEU_NIEN]: { IDLE: SHADOW_TEEN, HAPPY: SHADOW_TEEN }, 
+  [GiaiDoan.TRUONG_THANH]: { IDLE: SHADOW_ADULT, HAPPY: SHADOW_ADULT },
+  [GiaiDoan.HON_MA]: { IDLE: GHOST, HAPPY: GHOST },
+  POOP: POOP
+};
+
 // Master Frame Object
 export const PET_FRAMES = {
   'GA': CHICKEN_FRAMES,
   'PHUONG_HOANG': PHOENIX_FRAMES,
   'RONG_BANG': DRAGON_FRAMES,
-  'THAN_RUNG': TREANT_FRAMES
+  'THAN_RUNG': TREANT_FRAMES,
+  'LOI_THAN': THUNDER_FRAMES,
+  'HAC_MA': SHADOW_FRAMES
 };
 
 // Keep the old FRAMES export for backward compatibility if needed, aliasing to Chicken

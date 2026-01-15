@@ -1,6 +1,9 @@
 
 
 
+
+
+
 export enum GiaiDoan {
   TRUNG = 'TRUNG',        // Stage 1
   NUT_VO = 'NUT_VO',      // Stage 2
@@ -10,7 +13,7 @@ export enum GiaiDoan {
   HON_MA = 'HON_MA'
 }
 
-export type LoaiThu = 'GA' | 'PHUONG_HOANG' | 'RONG_BANG' | 'THAN_RUNG';
+export type LoaiThu = 'GA' | 'PHUONG_HOANG' | 'RONG_BANG' | 'THAN_RUNG' | 'LOI_THAN' | 'HAC_MA';
 
 export interface ChiSo {
   doi: number; // Hunger (0-100, 0 is full, 100 is starving)

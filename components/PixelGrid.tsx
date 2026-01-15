@@ -1,4 +1,8 @@
 
+
+
+
+
 import React from 'react';
 
 interface PixelGridProps {
@@ -59,6 +63,20 @@ const PALETTE: Record<number, string> = {
   53: '#8B4513', // Nâu gỗ đậm (Vỏ hạt, thân cây)
   54: '#D2691E', // Nâu gỗ sáng (Điểm sáng trên thân gỗ)
   55: '#FF69B4', // Hồng (Hoa nở khi trưởng thành - điểm nhấn)
+
+  // --- HỆ ĐIỆN (THUNDER RAIJU) ---
+  70: '#4B0082', // Tím than (Nền, bóng tối)
+  71: '#9370DB', // Tím nhạt (Lông chính)
+  72: '#FFFF00', // Vàng chanh (Tia sét chính)
+  73: '#FFFFFF', // Trắng tinh (Lõi sét, mắt)
+  74: '#FFA500', // Cam (Tia lửa điện dư thừa)
+
+  // --- HỆ BÓNG TỐI (NIGHTMARE STEED - HẮC MÃ) ---
+  80: '#000000', // Đen tuyền (Thân chính)
+  81: '#2d3748', // Xám xanh đen (Giáp, Viền)
+  82: '#7e22ce', // Tím đậm (Khói, Bờm)
+  83: '#ff0055', // Đỏ hồng Neon (Mắt, Lửa ma trơi)
+  84: '#4a044e', // Tím đen (Bóng đổ)
 };
 
 export const PixelGrid: React.FC<PixelGridProps> = ({ grid, color, className = "", size = 4 }) => {
