@@ -11,6 +11,7 @@ import { GiaiDoan } from './types';
 export default function App() {
   const {
       gameState,
+      savedPets,
       messages,
       inputChat,
       setInputChat,
@@ -24,6 +25,7 @@ export default function App() {
       showCelebration,
       setShowCelebration,
       handleSelectPet,
+      handleSwitchMode,
       handleAction,
       handleChat,
       resetGame,
@@ -63,7 +65,11 @@ export default function App() {
             {/* Content Layer (z-10) chứa Pet và Game World */}
             <div className="relative z-10 w-full h-full flex flex-col">
                 {!gameState.loaiThu ? (
-                    <SelectionScreen onSelect={handleSelectPet} isUnlocked={isUnlocked} />
+                    <SelectionScreen 
+                        onSelect={handleSelectPet} 
+                        isUnlocked={isUnlocked} 
+                        savedPets={savedPets}
+                    />
                 ) : isChatMode ? (
                     <ChatInterface 
                         gameState={gameState}
@@ -75,11 +81,24 @@ export default function App() {
                         onBack={() => setIsChatMode(false)}
                     />
                 ) : (
-                    <PetScreen 
-                        gameState={gameState} 
-                        petSpeech={petSpeech} 
-                        lastInteractionTime={lastInteractionTime}
-                    />
+                    <>
+                        <PetScreen 
+                            gameState={gameState} 
+                            petSpeech={petSpeech} 
+                            lastInteractionTime={lastInteractionTime}
+                        />
+                        
+                        {/* Switch Pet Button - Only shows for Adults who are alive and not sleeping */}
+                        {gameState.giaiDoan === GiaiDoan.TRUONG_THANH && !gameState.dangNgu && !gameState.biOm && (
+                            <button 
+                                onClick={handleSwitchMode}
+                                className="absolute bottom-4 right-4 z-50 bg-black/60 border-2 border-white/50 text-white rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-neon-blue hover:text-neon-blue hover:bg-black/80 transition-all shadow-lg active:scale-95 group"
+                                title="Đổi thú cưng"
+                            >
+                                <div className="text-xl group-hover:animate-spin">↻</div>
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
         </div>

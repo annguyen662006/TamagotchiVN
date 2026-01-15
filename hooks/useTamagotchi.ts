@@ -6,6 +6,7 @@ import { chatVoiThuCung } from '../services/geminiService';
 import { playSound } from '../services/soundService';
 
 const STORAGE_KEY = 'neon_pet_save_data_v2';
+const HISTORY_KEY = 'neon_pet_history_v1'; // Key for saving inactive pets
 const UNLOCK_KEY = 'neon_pet_unlocked_all';
 
 const KHOI_TAO: TrangThaiGame = {
@@ -46,6 +47,21 @@ export const useTamagotchi = () => {
         return KHOI_TAO;
     });
 
+    // Saved Pets History (Dictionary of LoaiThu -> TrangThaiGame)
+    const [savedPets, setSavedPets] = useState<Record<string, TrangThaiGame>>(() => {
+        if (typeof window !== 'undefined') {
+            const savedHistory = localStorage.getItem(HISTORY_KEY);
+            if (savedHistory) {
+                try {
+                    return JSON.parse(savedHistory);
+                } catch (e) {
+                    return {};
+                }
+            }
+        }
+        return {};
+    });
+
     // Unlock status
     const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
@@ -57,7 +73,7 @@ export const useTamagotchi = () => {
     const [messages, setMessages] = useState<TinNhan[]>([]);
     const [inputChat, setInputChat] = useState('');
     const [isChatMode, setIsChatMode] = useState(false);
-    const [isThinking, setIsThinking] = useState(false); // State mới cho hiệu ứng typing
+    const [isThinking, setIsThinking] = useState(false); 
     const [showNotification, setShowNotification] = useState<string | null>(null);
     const [petSpeech, setPetSpeech] = useState<string | null>(null);
     const [lastInteractionTime, setLastInteractionTime] = useState<number>(Date.now());
@@ -70,7 +86,6 @@ export const useTamagotchi = () => {
     const actionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const speechTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const sleepStartTime = useRef<number>(0);
-    // Ref để theo dõi giai đoạn trước đó nhằm phát hiện thời điểm chuyển đổi
     const prevGiaiDoanRef = useRef<GiaiDoan>(gameState.giaiDoan);
 
     // --- HELPERS ---
@@ -98,14 +113,18 @@ export const useTamagotchi = () => {
 
     // --- EFFECTS ---
     
-    // Auto-save
+    // Auto-save current game
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
     }, [gameState]);
 
+    // Auto-save history
+    useEffect(() => {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(savedPets));
+    }, [savedPets]);
+
     // Detect Evolution to Show Celebration
     useEffect(() => {
-        // Chỉ hiện chúc mừng nếu vừa chuyển từ giai đoạn khác sang TRUONG_THANH
         if (prevGiaiDoanRef.current !== GiaiDoan.TRUONG_THANH && gameState.giaiDoan === GiaiDoan.TRUONG_THANH) {
             setShowCelebration(true);
             playSound('EVOLVE');
@@ -156,8 +175,6 @@ export const useTamagotchi = () => {
                 let shouldWake = false;
                 let shouldSleepy = false;
 
-                // LOGIC: Giảm chỉ số Vui
-                // Nếu là người lớn (Adult), chỉ số vui giảm chậm hơn (1) so với trẻ con (3)
                 const baseDecay = isAdult ? 1 : 3;
                 const decay = prev.dangNgu ? 1 : baseDecay;
                 
@@ -172,10 +189,8 @@ export const useTamagotchi = () => {
                     newNangLuong = Math.max(prev.chiSo.nangLuong - drainRate, 0);
                 }
 
-                // LOGIC: Tự động ăn (Chỉ dành cho Adult)
                 if (isAdult && newDoi >= 80 && !prev.dangNgu) {
-                    newDoi = 30; // Ăn no vừa phải
-                    // Sử dụng setTimeout để tránh update state trong lúc render (nếu triggerNotification có set state)
+                    newDoi = 30; 
                     setTimeout(() => {
                         triggerNotification("Tự ăn (Trưởng thành)");
                         triggerSpeech("Tự lo được!", 2000);
@@ -183,19 +198,16 @@ export const useTamagotchi = () => {
                     }, 0);
                 }
 
-                // Auto wake: Khi trời sáng (Day) và Pin >= 60%
                 if (prev.dangNgu && isDay) {
                     if (newNangLuong >= 60) {
                         shouldWake = true;
                     }
                 }
 
-                // Get sleepy
                 if (!prev.dangNgu && isNight) {
                     shouldSleepy = true;
                 }
 
-                // Force sleep
                 let forceSleep = false;
                 if (isNight && !prev.dangNgu && newNangLuong < 10) {
                     forceSleep = true;
@@ -217,7 +229,6 @@ export const useTamagotchi = () => {
                     }, 0);
                 }
 
-                // Evolution
                 let newGiaiDoan: GiaiDoan = prev.giaiDoan;
                 let justEvolved = false;
 
@@ -238,7 +249,6 @@ export const useTamagotchi = () => {
                     newGiaiDoan = GiaiDoan.TRUONG_THANH;
                     justEvolved = true;
                     
-                    // Unlock Mechanic
                     if (prev.loaiThu === 'GA' && !isUnlocked) {
                         localStorage.setItem(UNLOCK_KEY, 'true');
                         setIsUnlocked(true);
@@ -250,28 +260,22 @@ export const useTamagotchi = () => {
                     playSound('EVOLVE');
                 }
 
-                // Hygiene & Poop
                 let newVeSinh = prev.chiSo.veSinh;
                 if (prev.phan > 0) {
                     newVeSinh = Math.max(newVeSinh - (prev.phan * 3), 0);
                 }
 
                 let newPhan = prev.phan;
-                // LOGIC: Tỷ lệ đi vệ sinh
-                // Adult: 2% (0.02), Bé: 10% (0.1)
                 const poopChance = isAdult ? 0.02 : 0.1;
                 
                 if (!prev.dangNgu && !forceSleep && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO && Math.random() < poopChance) {
                     newPhan = Math.min(prev.phan + 1, 4);
                     newVeSinh = Math.max(newVeSinh - 5, 0);
-                    if (Math.random() < 0.5) playSound('REFUSE'); // Âm thanh rặn/poop
+                    if (Math.random() < 0.5) playSound('REFUSE');
                 }
 
-                // Sickness
                 let isSick = prev.biOm;
                 if (!isSick && prev.giaiDoan !== GiaiDoan.TRUNG && prev.giaiDoan !== GiaiDoan.NUT_VO) {
-                    // LOGIC: Ngưỡng vệ sinh gây bệnh
-                    // Adult: chịu bẩn tốt hơn (<= 20 mới bệnh), Bé: <= 50 là bệnh
                     const hygieneThreshold = isAdult ? 20 : 50;
                     
                     const poorHygiene = newVeSinh <= hygieneThreshold;
@@ -280,10 +284,7 @@ export const useTamagotchi = () => {
                         triggerNotification(isAdult ? "Bẩn kinh khủng! Bệnh rồi." : "Bẩn quá! Thú cưng bị bệnh.");
                         playSound('WARNING');
                     } else {
-                        const overEating = newDoi > 90; // Vẫn giữ nguyên vì nếu người dùng cố nhồi nhét thì vẫn bệnh
-                        
-                        // LOGIC: Bệnh ngẫu nhiên (Cảm cúm)
-                        // Adult: 0.1% (Gần như không bệnh), Bé: 1%
+                        const overEating = newDoi > 90; 
                         const fluChance = isAdult ? 0.001 : 0.01;
                         
                         const randomFlu = Math.random() < fluChance; 
@@ -295,7 +296,6 @@ export const useTamagotchi = () => {
                     }
                 }
 
-                // Death
                 let deathChance = 0;
                 if (newDoi >= 100) deathChance = 1.0;
                 else if (isSick) deathChance = newVeSinh < 20 ? 0.1 : 0.02;
@@ -306,17 +306,15 @@ export const useTamagotchi = () => {
                     triggerNotification("Thú cưng đã mất...");
                 }
 
-                // Chatter & Warning Sounds
                 const isSleepingNow = shouldWake ? false : (forceSleep ? true : prev.dangNgu);
                 if (!isSleepingNow && newGiaiDoan !== GiaiDoan.HON_MA && newGiaiDoan !== GiaiDoan.TRUNG && newGiaiDoan !== GiaiDoan.NUT_VO) {
-                    // Logic xác suất để không spam âm thanh liên tục mỗi tick (3s)
                     const shouldPlaySound = Math.random() < 0.4; 
 
                     if (shouldSleepy && newNangLuong < 50 && Math.random() < 0.3) {
                         triggerSpeech("Buồn ngủ quá...", 3000); 
                         if (shouldPlaySound) playSound('WARNING');
                     }
-                    else if (newDoi > 80 && !isAdult) { // Adult tự ăn nên ít kêu đói
+                    else if (newDoi > 80 && !isAdult) { 
                         triggerSpeech("Đói quá...", 3000);
                         if (shouldPlaySound) playSound('WARNING');
                     }
@@ -371,6 +369,18 @@ export const useTamagotchi = () => {
 
     // --- ACTIONS ---
 
+    const handleSwitchMode = () => {
+        // Save current pet state before switching
+        if (gameState.loaiThu) {
+            setSavedPets(prev => ({
+                ...prev,
+                [gameState.loaiThu!]: gameState
+            }));
+        }
+        // Set loaiThu to null to trigger Selection Screen
+        setGameState(prev => ({ ...prev, loaiThu: null }));
+    };
+
     const handleSelectPet = (type: LoaiThu) => {
         if (type !== 'GA' && !isUnlocked) {
             triggerNotification("Nuôi Gà trưởng thành để mở khoá!");
@@ -379,17 +389,26 @@ export const useTamagotchi = () => {
         }
 
         playSound('SELECT');
-        setGameState({
-            ...KHOI_TAO,
-            loaiThu: type
-        });
+
+        // Check if we have a saved history for this pet
+        const savedState = savedPets[type];
+
+        // Only load saved state if it exists AND the pet is not dead
+        if (savedState && savedState.giaiDoan !== GiaiDoan.HON_MA) {
+            setGameState(savedState);
+            triggerNotification("Tiếp tục nuôi!");
+        } else {
+            // New game for this pet type
+            setGameState({
+                ...KHOI_TAO,
+                loaiThu: type
+            });
+        }
     };
 
     const handleAction = (action: string) => {
-        // Chỉ chặn nếu không có loại thú hoặc đã chết
         if (!gameState.loaiThu || gameState.giaiDoan === GiaiDoan.HON_MA) return;
         
-        // Nếu là giai đoạn trứng, chỉ phát âm thanh và thông báo
         if (gameState.giaiDoan === GiaiDoan.TRUNG || gameState.giaiDoan === GiaiDoan.NUT_VO) {
             playSound('EGG_TOUCH');
             triggerNotification("Shhh... Trứng đang ấp!");
@@ -443,8 +462,6 @@ export const useTamagotchi = () => {
                     } else if (prev.chiSo.nangLuong < 10) {
                         triggerNotification("Mệt quá không chơi nổi...");
                         triggerSpeech("Mệt quá...");
-                        // Technically not a hard refuse via state, but we play sound here since we return early in old logic, 
-                        // but here we are in setState. Let's mark refuse.
                         shouldRefuse = true;
                     } else {
                         playSound('PLAY');
@@ -510,7 +527,7 @@ export const useTamagotchi = () => {
             }
 
             if (shouldRefuse) {
-                playSound('REFUSE'); // Kích hoạt âm thanh từ chối
+                playSound('REFUSE'); 
                 if (action === 'WAKE') {
                    updates.hoatDongHienTai = 'NGU'; 
                 } else {
@@ -529,30 +546,36 @@ export const useTamagotchi = () => {
     };
 
     const handleChat = async () => {
-        if (!inputChat.trim() || isThinking) return; // Prevent spam
+        if (!inputChat.trim() || isThinking) return; 
         const userMsg = inputChat;
         setMessages(prev => [...prev, { nguoiGui: 'USER', noiDung: userMsg }]);
         setInputChat('');
         setLastInteractionTime(Date.now());
-        setIsThinking(true); // Bắt đầu suy nghĩ
+        setIsThinking(true); 
         
         try {
-            // Pass current activity to Gemini
             const reply = await chatVoiThuCung(userMsg, gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
             setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: reply }]);
         } catch (err) {
             setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: "..." }]);
         } finally {
-            setIsThinking(false); // Kết thúc suy nghĩ
+            setIsThinking(false); 
         }
     };
 
     const restartGame = () => {
         if (!gameState.loaiThu) return;
         playSound('SELECT');
+        // If restarting after death, we should probably clear the saved history for this pet type
+        const type = gameState.loaiThu;
+        
+        const newSavedPets = { ...savedPets };
+        delete newSavedPets[type];
+        setSavedPets(newSavedPets);
+
         setGameState({
             ...KHOI_TAO,
-            loaiThu: gameState.loaiThu
+            loaiThu: type
         });
         setMessages([]);
         setShowNotification(null);
@@ -570,17 +593,20 @@ export const useTamagotchi = () => {
         setShowCelebration(false);
         setIsThinking(false);
         setLastInteractionTime(Date.now());
+        setSavedPets({});
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(HISTORY_KEY);
     };
 
     return {
         gameState,
+        savedPets, // Exported to be used in SelectionScreen if needed
         messages,
         inputChat,
         setInputChat,
         isChatMode,
         setIsChatMode,
-        isThinking, // Export state
+        isThinking,
         showNotification,
         petSpeech,
         lastInteractionTime,
@@ -588,6 +614,7 @@ export const useTamagotchi = () => {
         showCelebration, 
         setShowCelebration, 
         handleSelectPet,
+        handleSwitchMode,
         handleAction,
         handleChat,
         resetGame,
