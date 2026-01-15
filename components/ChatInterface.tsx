@@ -1,6 +1,4 @@
 
-
-
 import React, { useRef, useEffect } from 'react';
 import { TinNhan, TrangThaiGame, GiaiDoan } from '../types';
 import { PET_FRAMES } from '../constants';
@@ -65,7 +63,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             </div>
                         )}
 
-                        <div className={`px-3 py-2 rounded-lg max-w-[85%] text-sm font-mono shadow-md relative break-words leading-relaxed
+                        <div className={`px-3 py-2 rounded-lg max-w-[85%] text-sm font-mono shadow-md relative break-words whitespace-pre-wrap leading-relaxed
                             ${m.nguoiGui === 'USER' 
                                 ? 'bg-neon-blue text-black rounded-br-none ml-8' 
                                 : 'bg-gray-800 text-neon-green border border-neon-green/40 rounded-bl-none'}`}>
