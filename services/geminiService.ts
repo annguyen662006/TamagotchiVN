@@ -140,6 +140,10 @@ export class LiveClient {
   private stream: MediaStream | null = null;
   private session: any = null; // Holds the active Gemini Live session
   private onTranscriptUpdate: (text: string) => void;
+  
+  // Buffers for accumulating text chunks
+  private currentInputTranscript = "";
+  private currentOutputTranscript = "";
 
   constructor(onTranscriptUpdate: (text: string) => void) {
     this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
@@ -188,12 +192,31 @@ export class LiveClient {
                 this.nextStartTime += audioBuffer.duration;
             }
 
-            // Handle Transcriptions (User & Model)
-            if (message.serverContent?.inputTranscription?.text) {
-                this.onTranscriptUpdate(`Bạn: ${message.serverContent.inputTranscription.text}`);
+            // Handle Transcriptions (Accumulate Chunks)
+            const inputFragment = message.serverContent?.inputTranscription?.text;
+            if (inputFragment) {
+                // If user starts speaking again, clear previous model output from bubble
+                if (this.currentOutputTranscript) this.currentOutputTranscript = "";
+                
+                this.currentInputTranscript += inputFragment;
+                this.onTranscriptUpdate(`Bạn: ${this.currentInputTranscript}`);
             }
-            if (message.serverContent?.outputTranscription?.text) {
-                 this.onTranscriptUpdate(`${message.serverContent.outputTranscription.text}`);
+            
+            const outputFragment = message.serverContent?.outputTranscription?.text;
+            if (outputFragment) {
+                 // If model starts speaking, clear previous user input from bubble
+                 if (this.currentInputTranscript) this.currentInputTranscript = "";
+                 
+                 this.currentOutputTranscript += outputFragment;
+                 this.onTranscriptUpdate(`${this.currentOutputTranscript}`);
+            }
+
+            if (message.serverContent?.turnComplete) {
+                // Optionally handle turn complete logic here
+                // Note: We don't clear buffers here to allow the bubble to persist 
+                // until the next turn starts.
+                this.currentInputTranscript = "";
+                this.currentOutputTranscript = "";
             }
         },
         onclose: () => {

@@ -69,7 +69,7 @@ export default function App() {
             {/* Mute Button - Góc dưới cùng bên trái của màn hình game */}
             <button 
                 onClick={toggleMusic}
-                className="absolute bottom-4 left-4 z-[55] w-8 h-8 bg-black/30 border border-white/20 rounded-lg flex items-center justify-center text-neon-green hover:bg-black/50 hover:border-neon-green active:scale-95 transition-all shadow-lg backdrop-blur-md"
+                className="absolute bottom-2 left-4 z-[55] w-8 h-8 bg-black/30 border border-white/20 rounded-lg flex items-center justify-center text-neon-green hover:bg-black/50 hover:border-neon-green active:scale-95 transition-all shadow-lg backdrop-blur-md"
                 title={isMusicEnabled ? "Tắt nhạc nền" : "Bật nhạc nền"}
             >
                 {isMusicEnabled ? (
@@ -89,7 +89,7 @@ export default function App() {
             {gameState.loaiThu && gameState.giaiDoan !== GiaiDoan.HON_MA && (
                  <button 
                     onClick={toggleLiveMode}
-                    className={`absolute bottom-4 left-14 z-[55] w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg backdrop-blur-md border ${
+                    className={`absolute bottom-2 left-14 z-[55] w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg backdrop-blur-md border ${
                         isLiveMode 
                         ? 'bg-red-900/50 border-red-500 text-white animate-pulse' 
                         : 'bg-black/30 border-white/20 text-gray-400 hover:bg-black/50 hover:text-white'
