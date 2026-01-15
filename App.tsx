@@ -7,7 +7,6 @@ import { ChatInterface } from './components/ChatInterface';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { useTamagotchi } from './hooks/useTamagotchi';
 import { GiaiDoan } from './types';
-import { IconFood, IconSleep, IconClean, IconPlay, IconChat, IconMeds } from './components/PixelIcons';
 
 export default function App() {
   const {
@@ -85,17 +84,22 @@ export default function App() {
 
         {/* --- PHẦN 2: BẢNG ĐIỀU KHIỂN (Cyberdeck Control Panel) --- */}
         {/* Phần này nằm cố định ở đáy, giả lập bàn phím vật lý */}
-        <div className="shrink-0 w-full bg-[#1a1b26] pb-safe-area relative shadow-[0_-5px_15px_rgba(0,0,0,0.5)] z-20 border-t-4 border-[#4a5568]">
-            {/* Decorative Lines replaced by border-t-4 above, removed old decorative div to match new style cleanliness */}
-            
+        <div className="shrink-0 w-full bg-gray-900 pb-safe-area relative shadow-[0_-5px_15px_rgba(0,0,0,0.5)] z-20">
+            {/* Decorative Top Border of Control Panel */}
+            <div className="h-1 w-full bg-gray-700 mb-2 flex">
+                <div className="w-1/3 h-full bg-neon-pink/50"></div>
+                <div className="w-1/3 h-full bg-transparent"></div>
+                <div className="w-1/3 h-full bg-neon-blue/50"></div>
+            </div>
+
             {/* Branding Text */}
-            <div className="text-center pt-2">
+            <div className="text-center">
                 <span className="text-[10px] text-gray-500 font-mono tracking-[0.5em] uppercase">GAME TUỔI THƠ</span>
             </div>
 
             {/* Button Grid Container */}
             <div className="p-4 pt-2">
-                <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+                <div className="grid grid-cols-3 gap-3 md:gap-6 max-w-lg mx-auto">
                     {gameState.giaiDoan === GiaiDoan.HON_MA ? (
                         <div className="col-span-3 flex gap-4 mt-2">
                             <button 
@@ -120,44 +124,48 @@ export default function App() {
                         <>
                             <GameButton 
                                 label="ĂN" 
-                                icon={<IconFood />} 
+                                icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/food.png" 
                                 onClick={() => handleAction('FEED')} 
-                                variant="eat"
+                                color="bg-neon-green"
                                 disabled={isChatMode} 
                             />
                             <GameButton 
                                 label={gameState.dangNgu ? "DẬY" : "NGỦ"} 
-                                icon={<IconSleep />} 
+                                icon={gameState.dangNgu 
+                                    ? "https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/sun.png" 
+                                    : "https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/sleep.png"
+                                } 
                                 onClick={() => handleAction(gameState.dangNgu ? 'WAKE' : 'SLEEP')} 
-                                variant="sleep"
+                                color="bg-yellow-400"
                                 disabled={isChatMode} 
                             />
                             <GameButton 
                                 label="DỌN" 
-                                icon={<IconClean />} 
+                                icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/broom.png" 
                                 onClick={() => handleAction('CLEAN')} 
-                                variant="clean"
+                                color="bg-blue-400"
                                 disabled={isChatMode} 
                             />
                             <GameButton 
                                 label="CHƠI" 
-                                icon={<IconPlay />} 
+                                icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/play.png" 
                                 onClick={() => handleAction('PLAY')} 
-                                variant="play"
+                                color="bg-neon-pink"
                                 disabled={isChatMode} 
                             />
                             <GameButton 
                                 label="CHAT" 
-                                icon={<IconChat />} 
+                                icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/chat.png" 
                                 onClick={() => setIsChatMode(true)} 
-                                variant="chat"
+                                color="bg-purple-400"
                                 active={isChatMode}
                             />
+                            
                             <GameButton 
                                 label="THUỐC" 
-                                icon={<IconMeds />} 
+                                icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/medicine.png" 
                                 onClick={() => handleAction('CURE')} 
-                                variant="meds"
+                                color="bg-red-500"
                                 disabled={isChatMode} 
                             />
                         </>

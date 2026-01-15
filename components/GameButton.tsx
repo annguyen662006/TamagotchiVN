@@ -1,52 +1,48 @@
 
 import React from 'react';
 
-export type ButtonVariant = 'eat' | 'sleep' | 'clean' | 'play' | 'chat' | 'meds' | 'default';
-
 interface GameButtonProps {
   label: string;
-  icon: React.ReactNode;
+  icon: string;
   onClick: () => void;
-  variant: ButtonVariant;
+  color: string;
   disabled?: boolean;
   active?: boolean;
 }
 
-const VARIANTS = {
-  eat: 'bg-[#e76f51] hover:bg-[#f4a261] text-white',
-  sleep: 'bg-[#264653] hover:bg-[#2a9d8f] text-white',
-  clean: 'bg-[#2a9d8f] hover:bg-[#48cae4] text-white',
-  play: 'bg-[#b5179e] hover:bg-[#f72585] text-white',
-  chat: 'bg-[#e9c46a] hover:bg-[#f4e4ba] text-[#1a1b26]',
-  meds: 'bg-[#d62828] hover:bg-[#ef476f] text-white',
-  default: 'bg-gray-700 hover:bg-gray-600 text-white',
-};
-
-export const GameButton: React.FC<GameButtonProps> = ({ label, icon, onClick, variant, disabled, active }) => {
-  const colorClass = VARIANTS[variant] || VARIANTS.default;
-  
-  // Custom Shadow for Pixel 3D Effect
-  const shadowClass = "shadow-[inset_-4px_-4px_0px_0px_rgba(0,0,0,0.5),inset_4px_4px_0px_0px_rgba(255,255,255,0.2),0px_4px_0px_0px_rgba(0,0,0,0.8)]";
-  const activeShadowClass = "active:shadow-[inset_-4px_-4px_0px_0px_rgba(0,0,0,0.5),inset_4px_4px_0px_0px_rgba(255,255,255,0.2),0px_0px_0px_0px_rgba(0,0,0,0.8)]";
-  
-  return (
+export const GameButton: React.FC<GameButtonProps> = ({ label, icon, onClick, color, disabled, active }) => (
     <button 
         onClick={onClick}
         disabled={disabled}
         className={`
-            relative flex flex-col items-center justify-center w-full h-16 rounded-none
-            font-mono font-bold text-[10px] uppercase tracking-widest transition-all duration-100
-            ${colorClass}
-            ${disabled ? 'opacity-40 grayscale cursor-not-allowed' : 'cursor-pointer'}
-            ${!disabled ? `${shadowClass} ${activeShadowClass} active:translate-y-1` : ''}
-            ${active ? 'translate-y-1 ' + activeShadowClass + ' ring-2 ring-white ring-inset' : ''}
+            relative group flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200
+            ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:scale-105 active:scale-95 cursor-pointer'}
         `}
-        style={{ imageRendering: 'pixelated' }}
     >
-        <div className="mb-1 w-6 h-6 flex items-center justify-center">
-            {icon}
+        {/* 
+            Button Circle Container 
+            - Sử dụng trực tiếp class màu (ví dụ: bg-neon-green) làm nền.
+            - Thêm border và shadow để tạo khối.
+            - Hiệu ứng gương (glossy) ở nửa trên.
+        */}
+        <div className={`
+            w-14 h-14 rounded-full flex items-center justify-center 
+            border-4 border-gray-800 
+            shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.2)] 
+            ${color} 
+            relative overflow-hidden
+            ${active ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : ''}
+        `}>
+            {/* Hiệu ứng phản chiếu ánh sáng (Gloss) */}
+            <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
+            
+            {/* Icon */}
+            <img src={icon} alt={label} className="w-8 h-8 object-contain drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] z-10 relative" />
         </div>
-        <span>{label}</span>
+
+        {/* Label */}
+        <span className="mt-2 text-[10px] font-bold font-mono text-gray-400 group-hover:text-white tracking-[0.2em] uppercase transition-colors drop-shadow-md">
+            {label}
+        </span>
     </button>
-  );
-};
+);
