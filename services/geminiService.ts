@@ -80,7 +80,7 @@ export const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong:
   `;
 };
 
-// --- AUDIO HELPERS FOR GEMINI TTS & LIVE ---
+// --- AUDIO HELPERS FOR GEMINI LIVE ---
 
 function decodeBase64(base64: string) {
   const binaryString = atob(base64);
@@ -213,8 +213,6 @@ export class LiveClient {
 
             if (message.serverContent?.turnComplete) {
                 // Optionally handle turn complete logic here
-                // Note: We don't clear buffers here to allow the bubble to persist 
-                // until the next turn starts.
                 this.currentInputTranscript = "";
                 this.currentOutputTranscript = "";
             }
@@ -242,8 +240,9 @@ export class LiveClient {
         const inputData = e.inputBuffer.getChannelData(0);
         const base64PCM = encodeToPCM16(inputData);
         
-        sessionPromise.then(session => {
-            session.sendRealtimeInput({
+        // Fixing the TS unused variable error by explicitly typing and using it
+        sessionPromise.then((sess: any) => {
+            sess.sendRealtimeInput({
                 media: {
                     mimeType: 'audio/pcm;rate=16000',
                     data: base64PCM
@@ -266,63 +265,12 @@ export class LiveClient {
     if (this.inputAudioCtx) await this.inputAudioCtx.close();
     if (this.outputAudioCtx) await this.outputAudioCtx.close();
     
-    // There is no explicit .close() method exposed on the session object returned by connect
-    // typically in this SDK pattern, closing the socket happens when we stop sending or refresh.
-    // However, keeping good hygiene by nullifying.
     this.session = null; 
     console.log("Live Session Disconnected");
   }
 }
 
 // --- STANDARD CHAT FUNCTION ---
-
-export const playTextToSpeech = async (text: string) => {
-    if (!process.env.API_KEY || !text) return;
-
-    try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        
-        // Call Gemini TTS
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text: text }] }],
-            config: {
-                responseModalities: [Modality.AUDIO],
-                speechConfig: {
-                    voiceConfig: {
-                        // Changed to 'Aoede' (Female, Energetic/High-pitched) to fit the "youthful, mischievous" persona.
-                        // Previous was 'Puck' (Male).
-                        prebuiltVoiceConfig: { voiceName: 'Aoede' },
-                    },
-                },
-            },
-        });
-
-        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        
-        if (base64Audio) {
-            // Play audio
-            // Create a specific AudioContext for TTS playback at 24kHz (Gemini standard)
-            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({sampleRate: 24000});
-            
-            // Resume context if needed (browsers block auto-play)
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-
-            const audioBytes = decodeBase64(base64Audio);
-            const audioBuffer = await decodeAudioData(audioBytes, audioCtx, 24000, 1);
-            
-            const source = audioCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioCtx.destination);
-            source.start();
-        }
-
-    } catch (error) {
-        console.error("TTS Error:", error);
-    }
-};
 
 export const chatVoiThuCung = async (msg: string, giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string): Promise<string> => {
   if (!process.env.API_KEY) {

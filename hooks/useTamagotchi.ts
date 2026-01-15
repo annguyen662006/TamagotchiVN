@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
-import { chatVoiThuCung, playTextToSpeech, LiveClient, getSystemInstruction } from '../services/geminiService';
+import { chatVoiThuCung, LiveClient, getSystemInstruction } from '../services/geminiService';
 import { playSound, startBGM, stopBGM, initAudio } from '../services/soundService';
 
 const STORAGE_KEY = 'neon_pet_save_data_v2';
@@ -652,11 +652,6 @@ export const useTamagotchi = () => {
         try {
             const reply = await chatVoiThuCung(userMsg, gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
             setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: reply }]);
-            
-            // Trigger TTS after receiving text
-            if (reply && reply !== "..." && reply !== "Lag quá sen ơi... (Lỗi kết nối)") {
-                playTextToSpeech(reply);
-            }
         } catch (err) {
             setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: "..." }]);
         } finally {
