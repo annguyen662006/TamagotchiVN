@@ -11,6 +11,7 @@ interface ChatInterfaceProps {
     setInputChat: (val: string) => void;
     handleChat: () => void;
     onBack: () => void;
+    isThinking?: boolean; // New prop
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -19,7 +20,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     inputChat, 
     setInputChat, 
     handleChat, 
-    onBack 
+    onBack,
+    isThinking
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +31,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, isThinking]); // Scroll when messages change OR thinking state changes
 
     return (
         <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-sm relative">
@@ -80,6 +82,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         </div>
                     </div>
                 ))}
+
+                {/* Thinking Indicator */}
+                {isThinking && gameState.loaiThu && (
+                    <div className="flex w-full mb-4 justify-start items-end gap-2 animate-pulse">
+                        <div className="shrink-0 bg-black/50 border border-neon-green/50 p-1 rounded-sm shadow-[0_0_5px_rgba(0,255,0,0.3)]">
+                                <PixelGrid 
+                                    grid={
+                                        gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu][GiaiDoan.TRUNG].IDLE :
+                                        gameState.giaiDoan === GiaiDoan.HON_MA ? PET_FRAMES[gameState.loaiThu][GiaiDoan.HON_MA].IDLE :
+                                        (PET_FRAMES[gameState.loaiThu][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu][GiaiDoan.SO_SINH]).IDLE
+                                    } 
+                                    size={1.5} 
+                                />
+                        </div>
+                        <div className="px-4 py-2 bg-gray-800 text-neon-green border border-neon-green/40 rounded-lg rounded-bl-none shadow-md relative">
+                            <div className="absolute bottom-0 -left-1.5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-gray-800 border-t-[6px] border-t-transparent -rotate-90"></div>
+                            <span className="tracking-[0.2em] font-bold text-lg">...</span>
+                        </div>
+                    </div>
+                )}
+                
                 <div ref={messagesEndRef} />
             </div>
 
@@ -90,12 +113,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     value={inputChat}
                     onChange={e => setInputChat(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleChat()}
-                    className="flex-1 bg-black text-white border border-gray-600 px-3 py-3 text-sm outline-none focus:border-neon-blue rounded-md shadow-inner"
-                    placeholder="Nhập tin nhắn..."
+                    disabled={isThinking}
+                    className="flex-1 bg-black text-white border border-gray-600 px-3 py-3 text-sm outline-none focus:border-neon-blue rounded-md shadow-inner disabled:opacity-50"
+                    placeholder={isThinking ? "Đang trả lời..." : "Nhập tin nhắn..."}
                 />
                 <button 
                     onClick={handleChat} 
-                    className="bg-neon-blue text-black px-4 py-2 font-bold hover:bg-white rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,255,255,0.3)] active:scale-95 transition-transform"
+                    disabled={isThinking}
+                    className="bg-neon-blue text-black px-4 py-2 font-bold hover:bg-white rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,255,255,0.3)] active:scale-95 transition-transform disabled:opacity-50 disabled:active:scale-100"
                 >
                     GỬI
                 </button>

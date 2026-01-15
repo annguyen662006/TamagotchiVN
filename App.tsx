@@ -16,6 +16,7 @@ export default function App() {
       setInputChat,
       isChatMode,
       setIsChatMode,
+      isThinking,
       showNotification,
       petSpeech,
       lastInteractionTime,
@@ -70,6 +71,7 @@ export default function App() {
                         inputChat={inputChat}
                         setInputChat={setInputChat}
                         handleChat={handleChat}
+                        isThinking={isThinking}
                         onBack={() => setIsChatMode(false)}
                     />
                 ) : (

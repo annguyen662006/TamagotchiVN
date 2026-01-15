@@ -57,6 +57,7 @@ export const useTamagotchi = () => {
     const [messages, setMessages] = useState<TinNhan[]>([]);
     const [inputChat, setInputChat] = useState('');
     const [isChatMode, setIsChatMode] = useState(false);
+    const [isThinking, setIsThinking] = useState(false); // State mới cho hiệu ứng typing
     const [showNotification, setShowNotification] = useState<string | null>(null);
     const [petSpeech, setPetSpeech] = useState<string | null>(null);
     const [lastInteractionTime, setLastInteractionTime] = useState<number>(Date.now());
@@ -499,15 +500,22 @@ export const useTamagotchi = () => {
     };
 
     const handleChat = async () => {
-        if (!inputChat.trim()) return;
+        if (!inputChat.trim() || isThinking) return; // Prevent spam
         const userMsg = inputChat;
         setMessages(prev => [...prev, { nguoiGui: 'USER', noiDung: userMsg }]);
         setInputChat('');
         setLastInteractionTime(Date.now());
+        setIsThinking(true); // Bắt đầu suy nghĩ
         
-        // Pass current activity to Gemini
-        const reply = await chatVoiThuCung(userMsg, gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
-        setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: reply }]);
+        try {
+            // Pass current activity to Gemini
+            const reply = await chatVoiThuCung(userMsg, gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
+            setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: reply }]);
+        } catch (err) {
+            setMessages(prev => [...prev, { nguoiGui: 'PET', noiDung: "..." }]);
+        } finally {
+            setIsThinking(false); // Kết thúc suy nghĩ
+        }
     };
 
     const restartGame = () => {
@@ -521,6 +529,7 @@ export const useTamagotchi = () => {
         setShowNotification(null);
         setPetSpeech(null);
         setShowCelebration(false);
+        setIsThinking(false);
         setLastInteractionTime(Date.now());
     };
 
@@ -530,6 +539,7 @@ export const useTamagotchi = () => {
         setShowNotification(null);
         setPetSpeech(null);
         setShowCelebration(false);
+        setIsThinking(false);
         setLastInteractionTime(Date.now());
         localStorage.removeItem(STORAGE_KEY);
     };
@@ -541,12 +551,13 @@ export const useTamagotchi = () => {
         setInputChat,
         isChatMode,
         setIsChatMode,
+        isThinking, // Export state
         showNotification,
         petSpeech,
         lastInteractionTime,
         isUnlocked,
-        showCelebration, // Export state
-        setShowCelebration, // Export setter
+        showCelebration, 
+        setShowCelebration, 
         handleSelectPet,
         handleAction,
         handleChat,
