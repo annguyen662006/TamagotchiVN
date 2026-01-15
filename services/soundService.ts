@@ -4,7 +4,7 @@
 
 let audioCtx: AudioContext | null = null;
 let bgmGainNode: GainNode | null = null;
-let bgmOscillator: OscillatorNode | null = null;
+// Removed unused bgmOscillator
 let nextNoteTime = 0;
 let bgmTimer: number | null = null;
 let isBgmPlaying = false;
