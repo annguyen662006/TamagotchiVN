@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
@@ -634,16 +633,40 @@ export const useTamagotchi = () => {
     };
 
     const resetGame = () => {
+        // Logic mới: Không xóa toàn bộ lịch sử (HISTORY_KEY), chỉ xử lý pet hiện tại
+        
+        if (gameState.loaiThu) {
+            const currentType = gameState.loaiThu;
+            
+            // Nếu pet đã chết, xóa nó khỏi danh sách đã lưu để lần sau chọn lại sẽ là nuôi mới
+            if (gameState.giaiDoan === GiaiDoan.HON_MA) {
+                setSavedPets(prev => {
+                    const newHistory = { ...prev };
+                    delete newHistory[currentType];
+                    return newHistory;
+                });
+            } else {
+                // Nếu đang sống (ví dụ: bấm nút Chọn Pet Mới ở màn hình chiến thắng), lưu lại trạng thái
+                setSavedPets(prev => ({
+                    ...prev,
+                    [currentType]: gameState
+                }));
+            }
+        }
+
+        // Đưa về màn hình chọn (loaiThu = null)
         setGameState(KHOI_TAO);
+        
         setMessages([]);
         setShowNotification(null);
         setPetSpeech(null);
         setShowCelebration(false);
         setIsThinking(false);
         setLastInteractionTime(Date.now());
-        setSavedPets({});
+        
+        // Chỉ xóa session hiện tại (STORAGE_KEY), KHÔNG xóa HISTORY_KEY
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(HISTORY_KEY);
+        
         stopBGM();
     };
 
