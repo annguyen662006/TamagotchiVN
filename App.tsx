@@ -1,4 +1,5 @@
 
+
 import { CRTOverlay } from './components/CRTOverlay';
 import { PetScreen } from './components/PetScreen';
 import { GameButton } from './components/GameButton';
@@ -29,7 +30,9 @@ export default function App() {
       handleAction,
       handleChat,
       resetGame,
-      restartGame
+      restartGame,
+      isMusicEnabled,
+      toggleMusic
   } = useTamagotchi();
 
   return (
@@ -61,6 +64,25 @@ export default function App() {
                     onNewPet={resetGame}
                 />
             )}
+            
+            {/* Mute Button - Góc dưới cùng bên trái của màn hình game */}
+            <button 
+                onClick={toggleMusic}
+                className="absolute bottom-4 left-4 z-[55] w-10 h-10 bg-black/60 border border-gray-600 rounded flex items-center justify-center text-neon-green hover:bg-black/80 hover:border-neon-green active:scale-95 transition-all shadow-md backdrop-blur-sm"
+                title={isMusicEnabled ? "Tắt nhạc nền" : "Bật nhạc nền"}
+            >
+                {isMusicEnabled ? (
+                     // Loa bật
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-4 0h-2.5l-5 5v7.5h5l5 5v-17.5z"/>
+                     </svg>
+                ) : (
+                     // Loa tắt
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-red-500">
+                        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51c.66-1.24 1.03-2.65 1.03-4.15 0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                     </svg>
+                )}
+            </button>
 
             {/* Content Layer (z-10) chứa Pet và Game World */}
             <div className="relative z-10 w-full h-full flex flex-col">

@@ -1,13 +1,15 @@
 
+
 import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
 import { chatVoiThuCung } from '../services/geminiService';
-import { playSound } from '../services/soundService';
+import { playSound, startBGM, stopBGM, initAudio } from '../services/soundService';
 
 const STORAGE_KEY = 'neon_pet_save_data_v2';
 const HISTORY_KEY = 'neon_pet_history_v1'; // Key for saving inactive pets
 const UNLOCK_KEY = 'neon_pet_unlocked_all';
+const MUSIC_KEY = 'neon_pet_music_enabled';
 
 const KHOI_TAO: TrangThaiGame = {
   loaiThu: null,
@@ -70,6 +72,16 @@ export const useTamagotchi = () => {
         return false;
     });
 
+    // Music status
+    const [isMusicEnabled, setIsMusicEnabled] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            // Default to true if not set
+            const saved = localStorage.getItem(MUSIC_KEY);
+            return saved !== 'false';
+        }
+        return true;
+    });
+
     const [messages, setMessages] = useState<TinNhan[]>([]);
     const [inputChat, setInputChat] = useState('');
     const [isChatMode, setIsChatMode] = useState(false);
@@ -111,6 +123,28 @@ export const useTamagotchi = () => {
         }, delay);
     };
 
+    const ensureAudioContext = () => {
+        initAudio();
+        if (isMusicEnabled) {
+            startBGM();
+        }
+    };
+
+    const toggleMusic = () => {
+        const newState = !isMusicEnabled;
+        setIsMusicEnabled(newState);
+        localStorage.setItem(MUSIC_KEY, String(newState));
+        
+        // Cần initAudio đề phòng trường hợp người dùng click nút này là tương tác đầu tiên
+        initAudio();
+        
+        if (newState) {
+            startBGM();
+        } else {
+            stopBGM();
+        }
+    };
+
     // --- EFFECTS ---
     
     // Auto-save current game
@@ -136,6 +170,11 @@ export const useTamagotchi = () => {
     useEffect(() => {
         if (gameState.giaiDoan === GiaiDoan.HON_MA) {
             setIsChatMode(false);
+            stopBGM(); // Stop music when dead
+        } else {
+            // Nếu không chết và nhạc đang bật, đảm bảo nhạc chạy (phòng khi reload)
+            // Lưu ý: useEffect này chạy khi init, nhưng playAudio cần tương tác user.
+            // Logic startBGM được xử lý trong ensureAudioContext khi user bấm nút.
         }
     }, [gameState.giaiDoan]);
 
@@ -304,6 +343,7 @@ export const useTamagotchi = () => {
                     newGiaiDoan = GiaiDoan.HON_MA;
                     playSound('DIE');
                     triggerNotification("Thú cưng đã mất...");
+                    stopBGM();
                 }
 
                 const isSleepingNow = shouldWake ? false : (forceSleep ? true : prev.dangNgu);
@@ -370,6 +410,7 @@ export const useTamagotchi = () => {
     // --- ACTIONS ---
 
     const handleSwitchMode = () => {
+        ensureAudioContext();
         // Save current pet state before switching
         if (gameState.loaiThu) {
             setSavedPets(prev => ({
@@ -382,6 +423,8 @@ export const useTamagotchi = () => {
     };
 
     const handleSelectPet = (type: LoaiThu) => {
+        ensureAudioContext();
+
         if (type !== 'GA' && !isUnlocked) {
             triggerNotification("Nuôi Gà trưởng thành để mở khoá!");
             playSound('REFUSE');
@@ -407,6 +450,8 @@ export const useTamagotchi = () => {
     };
 
     const handleAction = (action: string) => {
+        ensureAudioContext();
+
         if (!gameState.loaiThu || gameState.giaiDoan === GiaiDoan.HON_MA) return;
         
         if (gameState.giaiDoan === GiaiDoan.TRUNG || gameState.giaiDoan === GiaiDoan.NUT_VO) {
@@ -546,6 +591,8 @@ export const useTamagotchi = () => {
     };
 
     const handleChat = async () => {
+        ensureAudioContext();
+
         if (!inputChat.trim() || isThinking) return; 
         const userMsg = inputChat;
         setMessages(prev => [...prev, { nguoiGui: 'USER', noiDung: userMsg }]);
@@ -564,6 +611,7 @@ export const useTamagotchi = () => {
     };
 
     const restartGame = () => {
+        ensureAudioContext();
         if (!gameState.loaiThu) return;
         playSound('SELECT');
         // If restarting after death, we should probably clear the saved history for this pet type
@@ -596,6 +644,7 @@ export const useTamagotchi = () => {
         setSavedPets({});
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(HISTORY_KEY);
+        stopBGM();
     };
 
     return {
@@ -618,6 +667,8 @@ export const useTamagotchi = () => {
         handleAction,
         handleChat,
         resetGame,
-        restartGame
+        restartGame,
+        isMusicEnabled,
+        toggleMusic
     };
 };
