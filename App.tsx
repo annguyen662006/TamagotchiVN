@@ -1,5 +1,4 @@
 
-
 import { CRTOverlay } from './components/CRTOverlay';
 import { PetScreen } from './components/PetScreen';
 import { GameButton } from './components/GameButton';
@@ -32,7 +31,9 @@ export default function App() {
       resetGame,
       restartGame,
       isMusicEnabled,
-      toggleMusic
+      toggleMusic,
+      isLiveMode,
+      toggleLiveMode
   } = useTamagotchi();
 
   return (
@@ -83,6 +84,32 @@ export default function App() {
                      </svg>
                 )}
             </button>
+
+            {/* Live Chat Button - Bên cạnh nút Mute */}
+            {gameState.loaiThu && gameState.giaiDoan !== GiaiDoan.HON_MA && (
+                 <button 
+                    onClick={toggleLiveMode}
+                    className={`absolute bottom-4 left-14 z-[55] w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg backdrop-blur-md border ${
+                        isLiveMode 
+                        ? 'bg-red-900/50 border-red-500 text-white animate-pulse' 
+                        : 'bg-black/30 border-white/20 text-gray-400 hover:bg-black/50 hover:text-white'
+                    }`}
+                    title={isLiveMode ? "Tắt Live Chat" : "Bật Live Chat"}
+                >
+                    <div className="relative">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                        </svg>
+                        {isLiveMode && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                        )}
+                        {isLiveMode && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                        )}
+                    </div>
+                </button>
+            )}
 
             {/* Content Layer (z-10) chứa Pet và Game World */}
             <div className="relative z-10 w-full h-full flex flex-col">
@@ -170,7 +197,7 @@ export default function App() {
                                 icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/food.png" 
                                 onClick={() => handleAction('FEED')} 
                                 color="bg-neon-green"
-                                disabled={isChatMode} 
+                                disabled={isChatMode || isLiveMode} 
                             />
                             <GameButton 
                                 label={gameState.dangNgu ? "DẬY" : "NGỦ"} 
@@ -180,21 +207,21 @@ export default function App() {
                                 } 
                                 onClick={() => handleAction(gameState.dangNgu ? 'WAKE' : 'SLEEP')} 
                                 color="bg-yellow-400"
-                                disabled={isChatMode} 
+                                disabled={isChatMode || isLiveMode} 
                             />
                             <GameButton 
                                 label="DỌN" 
                                 icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/broom.png" 
                                 onClick={() => handleAction('CLEAN')} 
                                 color="bg-blue-400"
-                                disabled={isChatMode} 
+                                disabled={isChatMode || isLiveMode} 
                             />
                             <GameButton 
                                 label="CHƠI" 
                                 icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/play.png" 
                                 onClick={() => handleAction('PLAY')} 
                                 color="bg-neon-pink"
-                                disabled={isChatMode} 
+                                disabled={isChatMode || isLiveMode} 
                             />
                             <GameButton 
                                 label="CHAT" 
@@ -202,6 +229,7 @@ export default function App() {
                                 onClick={() => setIsChatMode(prev => !prev)} 
                                 color="bg-purple-400"
                                 active={isChatMode}
+                                disabled={isLiveMode}
                             />
                             
                             <GameButton 
@@ -209,7 +237,7 @@ export default function App() {
                                 icon="https://raw.githubusercontent.com/annguyen662006/Storage/refs/heads/main/Pictures/icon/medicine.png" 
                                 onClick={() => handleAction('CURE')} 
                                 color="bg-red-500"
-                                disabled={isChatMode} 
+                                disabled={isChatMode || isLiveMode} 
                             />
                         </>
                     )}

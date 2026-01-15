@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { TrangThaiGame, GiaiDoan, TinNhan, LoaiThu } from '../types';
 import { TOC_DO_TICK, MAX_CHI_SO, NGUONG_NUT_VO, NGUONG_NO, NGUONG_THIEU_NIEN, NGUONG_TRUONG_THANH, TICKS_PER_DAY } from '../constants';
-import { chatVoiThuCung, playTextToSpeech } from '../services/geminiService';
+import { chatVoiThuCung, playTextToSpeech, LiveClient, getSystemInstruction } from '../services/geminiService';
 import { playSound, startBGM, stopBGM, initAudio } from '../services/soundService';
 
 const STORAGE_KEY = 'neon_pet_save_data_v2';
@@ -89,6 +89,9 @@ export const useTamagotchi = () => {
     const [petSpeech, setPetSpeech] = useState<string | null>(null);
     const [lastInteractionTime, setLastInteractionTime] = useState<number>(Date.now());
     
+    // Live Mode State
+    const [isLiveMode, setIsLiveMode] = useState(false);
+    
     // State cho màn hình chúc mừng
     const [showCelebration, setShowCelebration] = useState(false);
 
@@ -98,6 +101,9 @@ export const useTamagotchi = () => {
     const speechTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const sleepStartTime = useRef<number>(0);
     const prevGiaiDoanRef = useRef<GiaiDoan>(gameState.giaiDoan);
+    
+    // Live Client Ref
+    const liveClientRef = useRef<LiveClient | null>(null);
 
     // --- HELPERS ---
     const triggerNotification = (msg: string) => {
@@ -143,6 +149,40 @@ export const useTamagotchi = () => {
             stopBGM();
         }
     };
+    
+    const toggleLiveMode = async () => {
+        ensureAudioContext();
+        if (isLiveMode) {
+            // Stop Live Mode
+            if (liveClientRef.current) {
+                await liveClientRef.current.disconnect();
+                liveClientRef.current = null;
+            }
+            setIsLiveMode(false);
+            setPetSpeech(null);
+            triggerNotification("Đã tắt Live Chat");
+        } else {
+            // Start Live Mode
+            if (!gameState.loaiThu) return;
+            
+            triggerNotification("Đang kết nối Live...");
+            
+            liveClientRef.current = new LiveClient((text) => {
+                // Update speech bubble with transcript
+                // Clear previous timeout to keep bubble persistent during conversation
+                if (speechTimeout.current) clearTimeout(speechTimeout.current);
+                setPetSpeech(text);
+                // Auto hide after 5 seconds of silence
+                speechTimeout.current = setTimeout(() => setPetSpeech(null), 5000);
+            });
+
+            const systemPrompt = getSystemInstruction(gameState.giaiDoan, gameState.chiSo, gameState.hoatDongHienTai);
+            await liveClientRef.current.connect(systemPrompt);
+            
+            setIsLiveMode(true);
+            setPetSpeech("... (Đang lắng nghe)");
+        }
+    };
 
     // --- EFFECTS ---
     
@@ -155,6 +195,15 @@ export const useTamagotchi = () => {
     useEffect(() => {
         localStorage.setItem(HISTORY_KEY, JSON.stringify(savedPets));
     }, [savedPets]);
+
+    // Cleanup Live Client on unmount
+    useEffect(() => {
+        return () => {
+            if (liveClientRef.current) {
+                liveClientRef.current.disconnect();
+            }
+        };
+    }, []);
 
     // Detect Evolution to Show Celebration
     useEffect(() => {
@@ -169,11 +218,8 @@ export const useTamagotchi = () => {
     useEffect(() => {
         if (gameState.giaiDoan === GiaiDoan.HON_MA) {
             setIsChatMode(false);
+            if (isLiveMode) toggleLiveMode(); // Stop live mode if dead
             stopBGM(); // Stop music when dead
-        } else {
-            // Nếu không chết và nhạc đang bật, đảm bảo nhạc chạy (phòng khi reload)
-            // Lưu ý: useEffect này chạy khi init, nhưng playAudio cần tương tác user.
-            // Logic startBGM được xử lý trong ensureAudioContext khi user bấm nút.
         }
     }, [gameState.giaiDoan]);
 
@@ -231,7 +277,7 @@ export const useTamagotchi = () => {
                     newDoi = 30; 
                     setTimeout(() => {
                         triggerNotification("Tự ăn (Trưởng thành)");
-                        triggerSpeech("Tự lo được!", 2000);
+                        if (!isLiveMode) triggerSpeech("Tự lo được!", 2000);
                         playSound('FEED');
                     }, 0);
                 }
@@ -255,7 +301,7 @@ export const useTamagotchi = () => {
                     setTimeout(() => {
                         playSound('WAKE');
                         triggerNotification("Đã sạc đầy (>60%)! Dậy thôi!");
-                        triggerSpeech("Oáp... Tràn trề năng lượng!");
+                        if (!isLiveMode) triggerSpeech("Oáp... Tràn trề năng lượng!");
                     }, 0);
                 }
 
@@ -263,7 +309,7 @@ export const useTamagotchi = () => {
                     setTimeout(() => {
                         playSound('SLEEP');
                         triggerNotification("Pin yếu (<10%)! Tự động ngủ.");
-                        triggerSpeech("Sập nguồn...", 2000);
+                        if (!isLiveMode) triggerSpeech("Sập nguồn...", 2000);
                     }, 0);
                 }
 
@@ -346,7 +392,9 @@ export const useTamagotchi = () => {
                 }
 
                 const isSleepingNow = shouldWake ? false : (forceSleep ? true : prev.dangNgu);
-                if (!isSleepingNow && newGiaiDoan !== GiaiDoan.HON_MA && newGiaiDoan !== GiaiDoan.TRUNG && newGiaiDoan !== GiaiDoan.NUT_VO) {
+                
+                // Only trigger random speech events if NOT in Live Mode
+                if (!isLiveMode && !isSleepingNow && newGiaiDoan !== GiaiDoan.HON_MA && newGiaiDoan !== GiaiDoan.TRUNG && newGiaiDoan !== GiaiDoan.NUT_VO) {
                     const shouldPlaySound = Math.random() < 0.4; 
 
                     if (shouldSleepy && newNangLuong < 50 && Math.random() < 0.3) {
@@ -404,12 +452,13 @@ export const useTamagotchi = () => {
         }, TOC_DO_TICK);
 
         return () => clearInterval(interval);
-    }, [gameState.giaiDoan, gameState.dangNgu, gameState.loaiThu, isUnlocked]);
+    }, [gameState.giaiDoan, gameState.dangNgu, gameState.loaiThu, isUnlocked, isLiveMode]);
 
     // --- ACTIONS ---
 
     const handleSwitchMode = () => {
         ensureAudioContext();
+        if (isLiveMode) toggleLiveMode();
         // Save current pet state before switching
         if (gameState.loaiThu) {
             setSavedPets(prev => ({
@@ -487,14 +536,14 @@ export const useTamagotchi = () => {
                     if (prev.chiSo.doi <= 0) {
                         shouldRefuse = true;
                         triggerNotification("No quá rồi!");
-                        triggerSpeech("No bể bụng rồi!");
+                        if (!isLiveMode) triggerSpeech("No bể bụng rồi!");
                     } else {
                         playSound('FEED');
                         updates.chiSo.doi = Math.max(prev.chiSo.doi - 20, 0);
                         updates.hoatDongHienTai = 'AN';
                         updates.chiSo.nangLuong = Math.max(prev.chiSo.nangLuong - feedEnergyCost, 0);
                         triggerNotification("Măm măm!");
-                        triggerSpeech(prev.giaiDoan === GiaiDoan.SO_SINH ? "Yummy!" : "Ngon tuyệt!");
+                        if (!isLiveMode) triggerSpeech(prev.giaiDoan === GiaiDoan.SO_SINH ? "Yummy!" : "Ngon tuyệt!");
                     }
                     break;
 
@@ -502,10 +551,10 @@ export const useTamagotchi = () => {
                     if (prev.biOm) {
                         shouldRefuse = true;
                         triggerNotification("Đang ốm, không chơi!");
-                        triggerSpeech("Khụ khụ...");
+                        if (!isLiveMode) triggerSpeech("Khụ khụ...");
                     } else if (prev.chiSo.nangLuong < 10) {
                         triggerNotification("Mệt quá không chơi nổi...");
-                        triggerSpeech("Mệt quá...");
+                        if (!isLiveMode) triggerSpeech("Mệt quá...");
                         shouldRefuse = true;
                     } else {
                         playSound('PLAY');
@@ -514,7 +563,7 @@ export const useTamagotchi = () => {
                         updates.chiSo.nangLuong = Math.max(prev.chiSo.nangLuong - playEnergyCost, 0);
                         updates.hoatDongHienTai = 'CHOI';
                         triggerNotification("Vui quá đi!");
-                        triggerSpeech(Math.random() > 0.5 ? "Ha ha ha!" : "Vui quá!");
+                        if (!isLiveMode) triggerSpeech(Math.random() > 0.5 ? "Ha ha ha!" : "Vui quá!");
                     }
                     break;
 
@@ -524,20 +573,21 @@ export const useTamagotchi = () => {
                     updates.chiSo.veSinh = 100;
                     updates.hoatDongHienTai = 'TAM';
                     triggerNotification("Sạch bóng!");
-                    triggerSpeech("Thơm tho!");
+                    if (!isLiveMode) triggerSpeech("Thơm tho!");
                     break;
 
                 case 'SLEEP':
                     if (!isNight && prev.chiSo.nangLuong > 30) {
                         shouldRefuse = true;
                         triggerNotification("Chưa buồn ngủ (Pin > 30%)");
-                        triggerSpeech("Còn sớm mà!");
+                        if (!isLiveMode) triggerSpeech("Còn sớm mà!");
                     } else {
                         playSound('SLEEP');
                         updates.dangNgu = true;
                         updates.hoatDongHienTai = 'NGU';
                         sleepStartTime.current = Date.now();
                         triggerNotification("Chúc ngủ ngon...");
+                        if (isLiveMode) toggleLiveMode(); // Stop live when sleeping
                     }
                     break;
 
@@ -545,13 +595,13 @@ export const useTamagotchi = () => {
                     if (prev.chiSo.nangLuong < 30) {
                         shouldRefuse = true;
                         triggerNotification("Cần sạc > 30% để dậy!");
-                        triggerSpeech("... (Pin yếu)");
+                        if (!isLiveMode) triggerSpeech("... (Pin yếu)");
                     } else {
                         playSound('WAKE');
                         updates.dangNgu = false;
                         updates.hoatDongHienTai = 'DUNG_YEN';
                         triggerNotification("Dậy rồi!");
-                        triggerSpeech("Oáp...");
+                        if (!isLiveMode) triggerSpeech("Oáp...");
                     }
                     break;
 
@@ -559,13 +609,13 @@ export const useTamagotchi = () => {
                     if (!prev.biOm) {
                         shouldRefuse = true;
                         triggerNotification("Có bệnh đâu!");
-                        triggerSpeech("Khỏe re mà?");
+                        if (!isLiveMode) triggerSpeech("Khỏe re mà?");
                     } else {
                         playSound('CURE');
                         updates.biOm = false;
                         updates.chiSo.vui = Math.max(prev.chiSo.vui - 10, 0);
                         triggerNotification("Đã uống thuốc!");
-                        triggerSpeech("Đắng quá...");
+                        if (!isLiveMode) triggerSpeech("Đắng quá...");
                     }
                     break;
             }
@@ -592,7 +642,7 @@ export const useTamagotchi = () => {
     const handleChat = async () => {
         ensureAudioContext();
 
-        if (!inputChat.trim() || isThinking) return; 
+        if (!inputChat.trim() || isThinking || isLiveMode) return; // Disable text chat if live
         const userMsg = inputChat;
         setMessages(prev => [...prev, { nguoiGui: 'USER', noiDung: userMsg }]);
         setInputChat('');
@@ -618,7 +668,9 @@ export const useTamagotchi = () => {
         ensureAudioContext();
         if (!gameState.loaiThu) return;
         playSound('SELECT');
-        // If restarting after death, we should probably clear the saved history for this pet type
+        
+        if (isLiveMode) toggleLiveMode();
+
         const type = gameState.loaiThu;
         
         const newSavedPets = { ...savedPets };
@@ -638,12 +690,11 @@ export const useTamagotchi = () => {
     };
 
     const resetGame = () => {
-        // Logic mới: Không xóa toàn bộ lịch sử (HISTORY_KEY), chỉ xử lý pet hiện tại
-        
+        if (isLiveMode) toggleLiveMode();
+
         if (gameState.loaiThu) {
             const currentType = gameState.loaiThu;
             
-            // Nếu pet đã chết, xóa nó khỏi danh sách đã lưu để lần sau chọn lại sẽ là nuôi mới
             if (gameState.giaiDoan === GiaiDoan.HON_MA) {
                 setSavedPets(prev => {
                     const newHistory = { ...prev };
@@ -651,7 +702,6 @@ export const useTamagotchi = () => {
                     return newHistory;
                 });
             } else {
-                // Nếu đang sống (ví dụ: bấm nút Chọn Pet Mới ở màn hình chiến thắng), lưu lại trạng thái
                 setSavedPets(prev => ({
                     ...prev,
                     [currentType]: gameState
@@ -659,7 +709,6 @@ export const useTamagotchi = () => {
             }
         }
 
-        // Đưa về màn hình chọn (loaiThu = null)
         setGameState(KHOI_TAO);
         
         setMessages([]);
@@ -669,15 +718,13 @@ export const useTamagotchi = () => {
         setIsThinking(false);
         setLastInteractionTime(Date.now());
         
-        // Chỉ xóa session hiện tại (STORAGE_KEY), KHÔNG xóa HISTORY_KEY
         localStorage.removeItem(STORAGE_KEY);
-        
         stopBGM();
     };
 
     return {
         gameState,
-        savedPets, // Exported to be used in SelectionScreen if needed
+        savedPets, 
         messages,
         inputChat,
         setInputChat,
@@ -697,6 +744,8 @@ export const useTamagotchi = () => {
         resetGame,
         restartGame,
         isMusicEnabled,
-        toggleMusic
+        toggleMusic,
+        isLiveMode,
+        toggleLiveMode
     };
 };

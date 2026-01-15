@@ -1,5 +1,7 @@
 {
   "name": "Tamagotchi VN",
   "description": "Một trải nghiệm nuôi thú ảo phong cách Cyberpunk Pixel-art với hiệu ứng CRT và AI Chat, hoàn toàn bằng tiếng Việt.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

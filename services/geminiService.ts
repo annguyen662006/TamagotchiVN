@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality, LiveServerMessage } from "@google/genai";
 import { GiaiDoan, ChiSo } from '../types';
 
 const CAM_XUC = [
@@ -23,7 +23,7 @@ const MAP_HOAT_DONG: Record<string, string> = {
   'CHET': 'Đã thăng thiên'
 };
 
-const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string) => {
+export const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string) => {
   // Random emotion for this specific interaction
   const camXucHienTai = CAM_XUC[Math.floor(Math.random() * CAM_XUC.length)];
   const hoatDongDienGiai = MAP_HOAT_DONG[hoatDong] || "Đang tồn tại";
@@ -80,7 +80,7 @@ const getSystemInstruction = (giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string
   `;
 };
 
-// --- AUDIO HELPERS FOR GEMINI TTS ---
+// --- AUDIO HELPERS FOR GEMINI TTS & LIVE ---
 
 function decodeBase64(base64: string) {
   const binaryString = atob(base64);
@@ -110,6 +110,148 @@ async function decodeAudioData(
   }
   return buffer;
 }
+
+function encodeToPCM16(bytes: Float32Array) {
+    const l = bytes.length;
+    const int16 = new Int16Array(l);
+    for (let i = 0; i < l; i++) {
+        // Clamp value between -1 and 1 then scale to Int16
+        const s = Math.max(-1, Math.min(1, bytes[i]));
+        int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    const u8 = new Uint8Array(int16.buffer);
+    let binary = '';
+    const len = u8.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(u8[i]);
+    }
+    return btoa(binary);
+}
+
+// --- CLASS: LIVE CLIENT CONTROLLER ---
+
+export class LiveClient {
+  private ai: GoogleGenAI;
+  private inputAudioCtx: AudioContext | null = null;
+  private outputAudioCtx: AudioContext | null = null;
+  private inputSource: MediaStreamAudioSourceNode | null = null;
+  private processor: ScriptProcessorNode | null = null;
+  private nextStartTime = 0;
+  private stream: MediaStream | null = null;
+  private session: any = null; // Holds the active Gemini Live session
+  private onTranscriptUpdate: (text: string) => void;
+
+  constructor(onTranscriptUpdate: (text: string) => void) {
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    this.onTranscriptUpdate = onTranscriptUpdate;
+  }
+
+  async connect(systemInstruction: string) {
+    if (!process.env.API_KEY) return;
+
+    // 1. Setup Audio Contexts
+    this.inputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+    this.outputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+
+    // 2. Get Mic Stream
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // 3. Connect to Gemini Live
+    const sessionPromise = this.ai.live.connect({
+      model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+      config: {
+        systemInstruction: systemInstruction,
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
+        },
+        inputAudioTranscription: {}, 
+        outputAudioTranscription: {}, 
+      },
+      callbacks: {
+        onopen: () => {
+          console.log("Live Session Connected");
+          this.startAudioStreaming(sessionPromise);
+        },
+        onmessage: async (message: LiveServerMessage) => {
+            // Handle Audio Output
+            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            if (base64Audio && this.outputAudioCtx) {
+                this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioCtx.currentTime);
+                const audioBytes = decodeBase64(base64Audio);
+                const audioBuffer = await decodeAudioData(audioBytes, this.outputAudioCtx, 24000, 1);
+                
+                const source = this.outputAudioCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(this.outputAudioCtx.destination);
+                source.start(this.nextStartTime);
+                this.nextStartTime += audioBuffer.duration;
+            }
+
+            // Handle Transcriptions (User & Model)
+            if (message.serverContent?.inputTranscription?.text) {
+                this.onTranscriptUpdate(`Bạn: ${message.serverContent.inputTranscription.text}`);
+            }
+            if (message.serverContent?.outputTranscription?.text) {
+                 this.onTranscriptUpdate(`${message.serverContent.outputTranscription.text}`);
+            }
+        },
+        onclose: () => {
+          console.log("Live Session Closed");
+        },
+        onerror: (e) => {
+          console.error("Live Session Error", e);
+          this.onTranscriptUpdate("Lỗi kết nối...");
+        }
+      }
+    });
+
+    this.session = sessionPromise;
+  }
+
+  startAudioStreaming(sessionPromise: Promise<any>) {
+    if (!this.inputAudioCtx || !this.stream) return;
+
+    this.inputSource = this.inputAudioCtx.createMediaStreamSource(this.stream);
+    this.processor = this.inputAudioCtx.createScriptProcessor(4096, 1, 1);
+
+    this.processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        const base64PCM = encodeToPCM16(inputData);
+        
+        sessionPromise.then(session => {
+            session.sendRealtimeInput({
+                media: {
+                    mimeType: 'audio/pcm;rate=16000',
+                    data: base64PCM
+                }
+            });
+        });
+    };
+
+    this.inputSource.connect(this.processor);
+    this.processor.connect(this.inputAudioCtx.destination);
+  }
+
+  async disconnect() {
+    if (this.processor) {
+        this.processor.disconnect();
+        this.processor.onaudioprocess = null;
+    }
+    if (this.inputSource) this.inputSource.disconnect();
+    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+    if (this.inputAudioCtx) await this.inputAudioCtx.close();
+    if (this.outputAudioCtx) await this.outputAudioCtx.close();
+    
+    // There is no explicit .close() method exposed on the session object returned by connect
+    // typically in this SDK pattern, closing the socket happens when we stop sending or refresh.
+    // However, keeping good hygiene by nullifying.
+    this.session = null; 
+    console.log("Live Session Disconnected");
+  }
+}
+
+// --- STANDARD CHAT FUNCTION ---
 
 export const playTextToSpeech = async (text: string) => {
     if (!process.env.API_KEY || !text) return;
@@ -158,8 +300,6 @@ export const playTextToSpeech = async (text: string) => {
         console.error("TTS Error:", error);
     }
 };
-
-// --- MAIN CHAT FUNCTION ---
 
 export const chatVoiThuCung = async (msg: string, giaiDoan: GiaiDoan, chiSo: ChiSo, hoatDong: string): Promise<string> => {
   if (!process.env.API_KEY) {
