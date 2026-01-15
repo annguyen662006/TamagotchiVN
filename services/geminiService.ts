@@ -138,7 +138,6 @@ export class LiveClient {
   private processor: ScriptProcessorNode | null = null;
   private nextStartTime = 0;
   private stream: MediaStream | null = null;
-  private session: any = null; // Holds the active Gemini Live session
   private onTranscriptUpdate: (text: string) => void;
   
   // Buffers for accumulating text chunks
@@ -199,7 +198,6 @@ export class LiveClient {
                 if (this.currentOutputTranscript) this.currentOutputTranscript = "";
                 
                 this.currentInputTranscript += inputFragment;
-                // REMOVED: Do not update bubble with user text to keep it Pet-only
             }
             
             const outputFragment = message.serverContent?.outputTranscription?.text;
@@ -226,8 +224,6 @@ export class LiveClient {
         }
       }
     });
-
-    this.session = sessionPromise;
   }
 
   startAudioStreaming(sessionPromise: Promise<any>) {
@@ -240,8 +236,8 @@ export class LiveClient {
         const inputData = e.inputBuffer.getChannelData(0);
         const base64PCM = encodeToPCM16(inputData);
         
-        sessionPromise.then((sess: any) => {
-            sess.sendRealtimeInput({
+        sessionPromise.then((session: any) => {
+            session.sendRealtimeInput({
                 media: {
                     mimeType: 'audio/pcm;rate=16000',
                     data: base64PCM
@@ -264,7 +260,6 @@ export class LiveClient {
     if (this.inputAudioCtx) await this.inputAudioCtx.close();
     if (this.outputAudioCtx) await this.outputAudioCtx.close();
     
-    this.session = null; 
     console.log("Live Session Disconnected");
   }
 }
