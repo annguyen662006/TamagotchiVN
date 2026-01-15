@@ -38,7 +38,8 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
         const displayStage = hasSave ? savedState.giaiDoan : GiaiDoan.SO_SINH;
         
         // Use frame based on saved state or default to baby
-        const frame = PET_FRAMES[type][displayStage]?.IDLE || PET_FRAMES[type][GiaiDoan.SO_SINH].IDLE;
+        // Access [0] because IDLE is now an array of frames
+        const frame = (PET_FRAMES[type][displayStage]?.IDLE || PET_FRAMES[type][GiaiDoan.SO_SINH].IDLE)[0];
 
         return (
             <div 
@@ -216,8 +217,9 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                         <div className="w-full flex flex-col items-center mb-6 pt-2">
                              <div className="w-24 h-24 bg-black/50 rounded-lg flex items-center justify-center border border-gray-700 mb-4 shadow-inner relative overflow-hidden">
                                 <div className="absolute inset-0 bg-neon-blue/5 animate-pulse pointer-events-none"></div>
+                                {/* Use [0] to get the first frame */}
                                 <PixelGrid 
-                                    grid={PET_FRAMES[viewingPet.type][GiaiDoan.SO_SINH].IDLE} 
+                                    grid={PET_FRAMES[viewingPet.type][GiaiDoan.SO_SINH].IDLE[0]} 
                                     size={4} 
                                 />
                              </div>

@@ -54,11 +54,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         {/* Avatar for PET messages */}
                         {m.nguoiGui === 'PET' && gameState.loaiThu && (
                             <div className="shrink-0 bg-black/50 border border-neon-green/50 p-1 rounded-sm shadow-[0_0_5px_rgba(0,255,0,0.3)]">
+                                {/* Access [0] for the first frame */}
                                 <PixelGrid 
                                     grid={
-                                        gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu][GiaiDoan.TRUNG].IDLE :
+                                        (gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu][GiaiDoan.TRUNG].IDLE :
                                         gameState.giaiDoan === GiaiDoan.HON_MA ? PET_FRAMES[gameState.loaiThu][GiaiDoan.HON_MA].IDLE :
-                                        (PET_FRAMES[gameState.loaiThu][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu][GiaiDoan.SO_SINH]).IDLE
+                                        (PET_FRAMES[gameState.loaiThu][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu][GiaiDoan.SO_SINH]).IDLE)[0]
                                     } 
                                     size={1.5} 
                                 />
@@ -87,11 +88,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 {isThinking && gameState.loaiThu && (
                     <div className="flex w-full mb-4 justify-start items-end gap-2 animate-pulse">
                         <div className="shrink-0 bg-black/50 border border-neon-green/50 p-1 rounded-sm shadow-[0_0_5px_rgba(0,255,0,0.3)]">
+                                {/* Access [0] for the first frame */}
                                 <PixelGrid 
                                     grid={
-                                        gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu][GiaiDoan.TRUNG].IDLE :
+                                        (gameState.giaiDoan === GiaiDoan.TRUNG ? PET_FRAMES[gameState.loaiThu][GiaiDoan.TRUNG].IDLE :
                                         gameState.giaiDoan === GiaiDoan.HON_MA ? PET_FRAMES[gameState.loaiThu][GiaiDoan.HON_MA].IDLE :
-                                        (PET_FRAMES[gameState.loaiThu][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu][GiaiDoan.SO_SINH]).IDLE
+                                        (PET_FRAMES[gameState.loaiThu][gameState.giaiDoan] || PET_FRAMES[gameState.loaiThu][GiaiDoan.SO_SINH]).IDLE)[0]
                                     } 
                                     size={1.5} 
                                 />

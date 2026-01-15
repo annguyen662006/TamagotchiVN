@@ -43,6 +43,18 @@ const MOON_GRID = [
 export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, lastInteractionTime = 0 }) => {
   const { giaiDoan, hoatDongHienTai, phan, dangNgu, tuoi, chiSo, loaiThu } = gameState;
   const [isIdleWalking, setIsIdleWalking] = useState(false);
+  
+  // Animation State
+  const [frameIndex, setFrameIndex] = useState(0);
+
+  // Animation Timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setFrameIndex(prev => prev + 1);
+    }, 500); // 500ms per frame
+
+    return () => clearInterval(interval);
+  }, []);
 
   // --- Day/Night Cycle Logic ---
   const timeOfDay = tuoi % TICKS_PER_DAY;
@@ -90,13 +102,24 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
     const petType = loaiThu || 'GA';
     const framesSet = PET_FRAMES[petType];
 
-    if (giaiDoan === GiaiDoan.TRUNG) return framesSet[GiaiDoan.TRUNG].IDLE;
-    if (giaiDoan === GiaiDoan.HON_MA) return framesSet[GiaiDoan.HON_MA].IDLE;
-    
-    const frames = framesSet[giaiDoan] || framesSet[GiaiDoan.SO_SINH];
-    if (hoatDongHienTai === 'CHOI' || hoatDongHienTai === 'AN') return frames.HAPPY || frames.IDLE;
-    return frames.IDLE;
-  }, [giaiDoan, hoatDongHienTai, loaiThu]);
+    let frames: number[][][]; // Array of grids
+
+    if (giaiDoan === GiaiDoan.TRUNG) {
+        frames = framesSet[GiaiDoan.TRUNG].IDLE;
+    } else if (giaiDoan === GiaiDoan.HON_MA) {
+        frames = framesSet[GiaiDoan.HON_MA].IDLE;
+    } else {
+        const stageFrames = framesSet[giaiDoan] || framesSet[GiaiDoan.SO_SINH];
+        if (hoatDongHienTai === 'CHOI' || hoatDongHienTai === 'AN') {
+            frames = stageFrames.HAPPY || stageFrames.IDLE;
+        } else {
+            frames = stageFrames.IDLE;
+        }
+    }
+
+    // Select specific frame from the array based on time
+    return frames[frameIndex % frames.length];
+  }, [giaiDoan, hoatDongHienTai, loaiThu, frameIndex]);
 
   const petColor = '#ffffff'; 
   
@@ -209,7 +232,7 @@ export const PetScreen: React.FC<PetScreenProps> = ({ gameState, petSpeech, last
       {phan > 0 && (
         <div className="absolute bottom-[15%] right-20 flex gap-2 z-20">
            {Array.from({length: Math.min(phan, 3)}).map((_, i) => (
-             <PixelGrid key={i} grid={PET_FRAMES[loaiThu || 'GA'].POOP} size={4} />
+             <PixelGrid key={i} grid={PET_FRAMES[loaiThu || 'GA'].POOP[0]} size={4} />
            ))}
         </div>
       )}

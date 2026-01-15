@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { PixelGrid } from './PixelGrid';
 import { PET_FRAMES } from '../constants';
@@ -29,7 +28,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({ loaiThu,
                 {/* Hình ảnh thú cưng trưởng thành */}
                 <div className="mb-8 p-6 bg-gradient-to-b from-blue-900/50 to-purple-900/50 rounded-full border-4 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.5)] animate-float">
                     <PixelGrid 
-                        grid={PET_FRAMES[loaiThu][GiaiDoan.TRUONG_THANH].IDLE} 
+                        grid={PET_FRAMES[loaiThu][GiaiDoan.TRUONG_THANH].IDLE[0]} 
                         size={6} 
                     />
                 </div>
