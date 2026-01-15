@@ -199,7 +199,7 @@ export class LiveClient {
                 if (this.currentOutputTranscript) this.currentOutputTranscript = "";
                 
                 this.currentInputTranscript += inputFragment;
-                this.onTranscriptUpdate(`Bạn: ${this.currentInputTranscript}`);
+                // REMOVED: Do not update bubble with user text to keep it Pet-only
             }
             
             const outputFragment = message.serverContent?.outputTranscription?.text;
@@ -240,7 +240,6 @@ export class LiveClient {
         const inputData = e.inputBuffer.getChannelData(0);
         const base64PCM = encodeToPCM16(inputData);
         
-        // Fixing the TS unused variable error by explicitly typing and using it
         sessionPromise.then((sess: any) => {
             sess.sendRealtimeInput({
                 media: {

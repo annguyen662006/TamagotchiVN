@@ -75,7 +75,7 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                             LV.{displayStage === GiaiDoan.TRUONG_THANH ? 'MAX' : getLabelForStage(displayStage)}
                          </span>
                     ) : (
-                        !isLocked && <span className="text-[9px] text-neon-blue animate-pulse">NEW</span>
+                        !isLocked && <span className="text-[9px] text-neon-blue animate-pulse">MỚI</span>
                     )}
                 </div>
 
@@ -117,7 +117,7 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                     {!isLocked && (
                         <div className="mt-2 w-full text-right">
                              <span className="text-[9px] text-neon-blue border border-neon-blue px-1.5 py-0.5 rounded hover:bg-neon-blue hover:text-black transition-colors">
-                                SELECT &gt;
+                                CHỌN NGAY &gt;
                              </span>
                         </div>
                     )}
@@ -227,7 +227,7 @@ export const SelectionScreen: React.FC<SelectionScreenProps> = ({ onSelect, isUn
                                 {viewingPet.name}
                              </h2>
                              <span className="text-[10px] text-gray-500 font-mono mt-1 tracking-widest uppercase">
-                                CODE: {viewingPet.type}
+                                MÃ SỐ: {viewingPet.type}
                              </span>
                         </div>
                         
