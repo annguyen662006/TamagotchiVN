@@ -191,10 +191,10 @@ export const useTamagotchi = () => {
                     // Reset silence timer on any transcript update (user speaks or model speaks)
                     if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
                     
-                    // Set new silence timeout (e.g., 10 seconds of no transcript updates)
+                    // Set new silence timeout (30 seconds of no transcript updates)
                     silenceTimeoutRef.current = setTimeout(() => {
                         stopLiveMode("Đã tắt do im lặng...");
-                    }, 10000); 
+                    }, 30000); 
                 },
                 (reason) => {
                     // Error callback
@@ -209,10 +209,10 @@ export const useTamagotchi = () => {
             setIsLiveMode(true);
             setPetSpeech("... (Đang lắng nghe)");
 
-            // Start initial silence timer (in case user never speaks)
+            // Start initial silence timer (in case user never speaks) - 30 seconds
             silenceTimeoutRef.current = setTimeout(() => {
                 stopLiveMode("Đã tắt do im lặng...");
-            }, 10000);
+            }, 30000);
         }
     };
 
